@@ -8,11 +8,23 @@ library(dplyr)
 knitr::opts_chunk$set(tidy = FALSE, comment = "#>")
 ```
 
+---
 # Window functions and grouped mutate/filter
+---
 
+# Функции по окну и групповые модификации/фильтрации
+
+---
 A __window function__ is a variation on an aggregation function. Where an aggregation function, like `sum()` and `mean()`, takes n inputs and return a single value, a window function returns n values. The output of a window function depends on all its input values, so window functions don't include functions that work element-wise, like `+` or `round()`. Window functions include variations on aggregate functions, like `cumsum()` and `cummean()`, functions for ranking and ordering, like `rank()`, and functions for taking offsets, like `lead()` and `lag()`. 
+---
 
+__Функции по окну__ -- это вариант функций аггрегирования. Где функции аггрегирования, на подобие `sum()` и `mean()`, получают n аргументов на вход и возвращают единственное значение, а функции по окну возвращают n значений. Каждый элемент результата функций по окну зависит от величин всех переданных параметров, таким образом они не включают функции работающие поэлементно, такие как `+` или `round()`. К функциям по окну относятся вариации аггрегатных функций, подобные `cumsum()` и `cummean()`, функции ранжирования и упорядочивания, на подобие `rank()`, и функции вычисления сдвигов , типа `lead()` и `lag()`.
+
+---
 Window functions are used in conjunction with `mutate` and `filter` to solve a wide range of problems, some of which are shown below:
+---
+
+Функции по окну используют совместно с `mutate` и `filter` для решения широкого круга задач, некоторые из которых показаны ниже:
 
 ```{r, results = "hide"}
 library(Lahman)
@@ -20,25 +32,34 @@ batting <- select(tbl_df(Batting), playerID, yearID, teamID, G, AB:H)
 batting <- arrange(batting, playerID, yearID, teamID)
 players <- group_by(batting, playerID)
 
-# For each player, find the two years with most hits
+# Для каждого игрока найти 2 года с максимальными значениями
 filter(players, min_rank(desc(H)) <= 2 & H > 0)
-# Within each player, rank each year by the number of games played
+# В пределах игр каждого игрока ранжировать годы по количеству сыграных игр
 mutate(players, G_rank = min_rank(G))
 
-# For each player, find every year that was better than the previous year
+# Для каждого игрока найти все такие годы, чтобы они были лучше предыдущего
 filter(players, G > lag(G))
-# For each player, compute avg change in games played per year
+# Для каждого игрока вычислить среднее изменение в играх за год
 mutate(players, G_change = (G - lag(G)) / (yearID - lag(yearID)))
 
-# For each player, find all where they played more games than average
+# Для каждого игрока найти всех таких, что количество сыграных ими игр выше среднего
 filter(players, G > mean(G))
-# For each, player compute a z score based on number of games played
+# Для каждого игрока вычислить z-статистику
+# (квантиль в распределении количества игр)
 mutate(players, G_z = (G - mean(G)) / sd(G))
 ```
 
+---
 This vignette is broken down into two sections. First you'll learn about the five families of window functions in R, and what you can use them for. If you're only working with local data sources, you can stop there. Otherwise, continue on to learn about window functions in SQL. They are relatively new, but are supported by Postgres, Amazon's Redshift and Google's bigquery. The window functions themselves are basically the same (modulo a few name conflicts), but their specification is a little different. I'll briefy review how they work, and then show how dplyr translates their R equivalents to SQL.
+---
 
+Это руководство разбито на две части. В первой вы изучите пять семейств фкнций по окну в R, и для чего вы их можете применять. Если вы работаете только с локальными источниками данных, вы можете остановться на этом. В противном случае вы можете продолжить изучать ыункции по окну в SQL. Эта возможность появилась относительно недавно, но ее уже поддерживают Postgres, Redshift от Amazon и bigquery от Google.
+
+---
 Before reading this vignette, you should be familiar with `mutate()` and `filter()`. If you want to use window functions with SQL databases, you should also be familiar with the basics of dplyr's SQL translation.
+---
+
+Перед началом чтения этого руководства, вы должны уже быть знакомы с функциями  `mutate()` и `filter()`. Если вы хотите использовать функции по окну с SQL базами данных, вы должны ознакомиться с основами того как `dplyr` строит SQL-запросы.
 
 ## Types of window functions
 
