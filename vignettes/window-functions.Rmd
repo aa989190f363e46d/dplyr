@@ -8,21 +8,21 @@ library(dplyr)
 knitr::opts_chunk$set(tidy = FALSE, comment = "#>")
 ```
 
----
+<!--
 # Window functions and grouped mutate/filter
----
+-->
 
 # Функции по окну и групповые модификации/фильтрации
 
----
+<!--
 A __window function__ is a variation on an aggregation function. Where an aggregation function, like `sum()` and `mean()`, takes n inputs and return a single value, a window function returns n values. The output of a window function depends on all its input values, so window functions don't include functions that work element-wise, like `+` or `round()`. Window functions include variations on aggregate functions, like `cumsum()` and `cummean()`, functions for ranking and ordering, like `rank()`, and functions for taking offsets, like `lead()` and `lag()`. 
----
+-->
 
 __Функции по окну__ -- это вариант функций аггрегирования. Где функции аггрегирования, на подобие `sum()` и `mean()`, получают n аргументов на вход и возвращают единственное значение, а функции по окну возвращают n значений. Каждый элемент результата функций по окну зависит от величин всех переданных параметров, таким образом они не включают функции работающие поэлементно, такие как `+` или `round()`. К функциям по окну относятся вариации аггрегатных функций, подобные `cumsum()` и `cummean()`, функции ранжирования и упорядочивания, на подобие `rank()`, и функции вычисления сдвигов , типа `lead()` и `lag()`.
 
----
+<!--
 Window functions are used in conjunction with `mutate` and `filter` to solve a wide range of problems, some of which are shown below:
----
+-->
 
 Функции по окну используют совместно с `mutate` и `filter` для решения широкого круга задач, некоторые из которых показаны ниже:
 
@@ -49,46 +49,83 @@ filter(players, G > mean(G))
 mutate(players, G_z = (G - mean(G)) / sd(G))
 ```
 
----
+<!--
 This vignette is broken down into two sections. First you'll learn about the five families of window functions in R, and what you can use them for. If you're only working with local data sources, you can stop there. Otherwise, continue on to learn about window functions in SQL. They are relatively new, but are supported by Postgres, Amazon's Redshift and Google's bigquery. The window functions themselves are basically the same (modulo a few name conflicts), but their specification is a little different. I'll briefy review how they work, and then show how dplyr translates their R equivalents to SQL.
----
+-->
 
 Это руководство разбито на две части. В первой вы изучите пять семейств фкнций по окну в R, и для чего вы их можете применять. Если вы работаете только с локальными источниками данных, вы можете остановться на этом. В противном случае вы можете продолжить изучать ыункции по окну в SQL. Эта возможность появилась относительно недавно, но ее уже поддерживают Postgres, Redshift от Amazon и bigquery от Google.
 
----
+<!--
 Before reading this vignette, you should be familiar with `mutate()` and `filter()`. If you want to use window functions with SQL databases, you should also be familiar with the basics of dplyr's SQL translation.
----
+-->
 
 Перед началом чтения этого руководства, вы должны уже быть знакомы с функциями  `mutate()` и `filter()`. Если вы хотите использовать функции по окну с SQL базами данных, вы должны ознакомиться с основами того как `dplyr` строит SQL-запросы.
 
+<!--
 ## Types of window functions
+-->
 
+## Типы функций по окну
+
+<!--
 There are five main families of window functions. Two families are unrelated to aggregation functions:
+-->
 
+Далее будут перечислены пять основных семейств функций по окну. Первые два семейства не относятся к функциям агрегирования:
+
+<!--
 * Ranking and ordering functions: `row_number()`, `min_rank` (`RANK` in SQL),
   `dense_rank()`, `cume_dist()`, `percent_rank()`, and `ntile()`. These 
   functions all take a vector to order by, and return various types of ranks.
+-->
 
+* Функции ранжирования и упорядочивания: `row_number()`, `min_rank` (`RANK` в SQL),
+  `dense_rank()`, `cume_dist()`, `percent_rank()` и `ntile()`. Все эти функции принимают на вход вектор и возвращают различные типы рангов.
+
+<!--
 * Offsets `lead()` and `lag()` allow you to access the previous and next
   values in a vector, making it easy to compute differences and trends.
+-->
 
+* Сдвигающие `lead()` и `lag()` позволяют получить предыдущие или последующие значения вектора, упрощая вычисления пошаговых разностей и тенденций.
+
+<!--
 The other three families are variations on familiar aggregate functions:
+-->
 
+Остальные три -- это варианты уже известных функций агрегирования:
+
+<!-- 
 * Cumulative aggregates: `cumsum()`, `cummin()`, `cummax()` (from base R), 
   and `cumall()`, `cumany()`, and `cummean()` (from dplyr).
+ -->
 
+* Функции агрегирования с накоплением: `cumsum()`, `cummin()`, `cummax()` (из базовой поставки), и `cumall()`, `cumany()`, and `cummean()` (из пакета dplyr).
+
+<!-- 
 * Rolling aggregates operate in a fixed width window. You won't find them in 
   base R or in dplyr, but there are many implementations in 
   other packages, such as 
   [RcppRoll](http://cran.r-project.org/web/packages/RcppRoll).
+ -->
 
+* Скользящие функции агрегирования с фиксированным окном. Вы не найдете их а базовой поставке или в пакете dplyr, но множество таких функций реализовано в других пакетах, например [RcppRoll](http://cran.r-project.org/web/packages/RcppRoll).
+
+<!-- 
 * Recycled aggregates, where an aggregate is repeated to match the length
   of the input. These are not needed in R because vector recycling 
   automatically recycles aggregates where needed. They are important in SQL, 
   because the presence of an aggregation function usually tells the database 
   to return only one row per group.
+ -->
 
+* Функции агрегирования с повторным включением элементов, т.е. такие функции которые могут повторно использовать один и тот же аргумент для того чтобы вернуть необходимое количества элементов. В R нет необходимости в таких функциях, т. к. повторное сключение элементов в вычисление происходит автоматически там где это необходимо. Но они играют важную роль в SQL, потому что наличие функции агрегирования предполагает что будет возвращена только одна строка для каждой группы.
+
+<!-- 
 Each family is described in more detail below, focussing on the general goals and how to use them with dplyr. For more details, refer to the individual function documentation.
+ -->
+
+Каждое описанное семейство будет более конкретно рассмотрено далее, внимание будет обращаться на основные задачи и использование с dplyr. За деталями следует обращаться к документации по каждой функции.
 
 ### Ranking functions
 
@@ -146,20 +183,20 @@ You can use them to:
 
 * Compute differences or percent changes.
 
-    ```{r, results = "hide"}
-    # Compute the relative change in games played
-    mutate(players, G_delta = G - lag(G))
-    ```
+```{r, results = "hide"}
+# Compute the relative change in games played
+mutate(players, G_delta = G - lag(G))
+```
     
     Using `lag()` is more convenient than `diff()` because for `n` inputs 
     `diff()` returns `n - 1` outputs.
 
 * Find out when a value changes.
   
-    ```{r, results = "hide"}
-    # Find when a player changed teams
-    filter(players, teamID != lag(teamID))
-    ```
+```{r, results = "hide"}
+# Find when a player changed teams
+filter(players, teamID != lag(teamID))
+```
 
 `lead()` and `lag()` have an optional argument `order_by`. If set, instead of using the row order to determine which value comes before another, they will use another variable. This important if you have not already sorted the data, or you want to sort one way and lag another. 
 
