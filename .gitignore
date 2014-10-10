@@ -3,4 +3,5 @@
 .Rproj.user
 .Rhistory
 inst/doc
+vignettes/*.md
 .httr-oauth

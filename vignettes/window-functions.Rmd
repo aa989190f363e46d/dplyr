@@ -8,9 +8,7 @@ library(dplyr)
 knitr::opts_chunk$set(tidy = FALSE, comment = "#>")
 ```
 
-<!--
-# Window functions and grouped mutate/filter
--->
+<!-- # Window functions and grouped mutate/filter -->
 
 # Оконные функции и групповые модификации/фильтрации
 
@@ -64,9 +62,7 @@ Before reading this vignette, you should be familiar with `mutate()` and `filter
 
 Перед началом чтения этого руководства, вы должны уже быть знакомы с функциями  `mutate()` и `filter()`. Если вы хотите использовать оконные функции с SQL базами данных, вы должны ознакомиться с основами того как `dplyr` строит SQL-запросы.
 
-<!--
-## Types of window functions
--->
+<!-- ## Types of window functions -->
 
 ## Типы оконных функций
 
@@ -130,9 +126,7 @@ Each family is described in more detail below, focussing on the general goals an
 
 Каждое описанное семейство будет более конкретно рассмотрено далее, внимание будет обращаться на основные задачи и использование с dplyr. За деталями следует обращаться к документации по каждой функции.
 
-<!-- 
-### Ranking functions 
- -->
+<!-- ### Ranking functions  -->
 
 ### Функции ранжирования
 
@@ -202,9 +196,7 @@ All ranking functions rank from lowest to highest so that small input values get
 
 Все функции ранжирования упорядочивают результат по возрастанию, таким образом меньшие значения получат меньший ранг. Для обращения порядка используйте `desc()`.
 
-<!-- 
-### Lead and lag
- -->
+<!-- ### Lead and lag -->
 
 ### Lead и lag
 
@@ -274,9 +266,7 @@ right <- mutate(scrambled, running = order_by(year, cumsum(value)))
 arrange(right, year)
 ```
 
-<!-- 
-### Cumulative aggregates
- -->
+<!-- ### Cumulative aggregates -->
 
 ### Функции агрегирования с накоплением
 
@@ -314,9 +304,7 @@ This function uses a bit of non-standard evaluation, so I wouldn't recommend usi
 
 Эта функция имеет немного нестандартный порядок вычисления, так что я не рекомендовал бы использовать её в других функциях; лучше используйте простую, но менее короткую `with_order()`.
 
-<!-- 
-### Recycled aggregates
- -->
+<!-- ### Recycled aggregates -->
 
 ### Повторение агрегатных функций
 
@@ -368,26 +356,47 @@ Or, as in the introductory example, we could compute a z-score:
 mutate(players, G_z = (G - mean(G)) / sd(G))
 ```
 
-## Window functions in SQL
+<!-- ## Window functions in SQL -->
 
+## Оконные функции в SQL
+
+<!-- 
 Window functions have a slightly different flavour in SQL. The syntax is a little different, and the cumulative, rolling and recycled aggregate functions are all based on the simple aggregate function. The goal in this section is not to tell you everything you need to know about window functions in SQL, but to remind you of the basics and show you how dplyr translates your R expressions in to SQL. 
+ -->
 
-### Structure of a window function in SQL
+Оконные функции имеют несколько иной дух в SQL. Немного отличается синтаксис, и также все кумулятивные, скользящие и функции с повторным включением элементов основываются на простых агрегатных функциях. Целью этого раздела не является рассказать вам все что только может понадобиться знать об оконных функциях в SQL, а освежить воспоминания и показать как dplyr преобразует выражения R в SQL. 
 
+<!-- ### Structure of a window function in SQL -->
+
+### Структура оконных функций в SQL 
+
+<!-- 
 In SQL, window functions have the form `[expression] OVER ([partition clause] [order clause] [frame_clause])`:
+ -->
 
+В SQL, оконные функции записываются в форме `[expression] OVER ([partition clause] [order clause] [frame_clause])`:
+
+<!-- 
 * The __expression__ is a combination of variable names and window functions.
   Support for window functions varies from database to database, but most
   support the ranking functions, `lead`, `lag`, `nth`, `first`,
   `last`, `count`, `min`, `max`, `sum`, `avg` and `stddev`. dplyr 
   generates this from the R expression in your `mutate` or `filter` call.
+ -->
 
+* __expression__ (выражение) -- это комбинация имён переменных и функций.   Полнота поддержки оконных функций меняется от СУБД к СУБД, но в основном поддерживаются функции ранжирования, `lead`, `lag`, `nth`, `first`, `last`, `count`, `min`, `max`, `sum`, `avg` и `stddev`. dplyr генерирует их из выражений R в вызовах `mutate` or `filter`.
+
+<!-- 
 * The __partition clause__ specifies how the window function is broken down
   over groups. It plays an analogous role to `GROUP BY` for aggregate functions,
   and `group_by()` in dplyr. It is possible for different window functions to 
   be partitioned into different groups, but not all databases support it, and
   neither does dplyr.
-  
+ -->  
+
+* __partition clause__ (предикат разделения) определяет какие строки будут использованы как аргумент оконной функции. Он играет ту же роль что и `GROUP BY` для агрегатных функций, и `group_by()` в dplyr. Возможно выделение разных наборов строк для разных оконных функций (имеются ввиду функции в одном выражении), не все СУБД поддерживают это, и ничего такого не делает dplyr.
+
+<!-- 
 * The __order clause__ controls the ordering (when it makes a difference).
   This is important for the ranking functions since it specifies which 
   variables to rank by, but it's also needed for cumulative functions and lead.
@@ -395,7 +404,11 @@ In SQL, window functions have the form `[expression] OVER ([partition clause] [o
   it which variable defines the order. In dplyr you do this with `arrange()`. 
   If the order clause is missing when needed, some databases fail with an
   error message while others return non-deterministic results.
-  
+ -->  
+
+* __order clause__ (предикат упорядочения) контролирует порядок (если он должен отличаться). Это важно для функций ранжирования которым нужно указать колонку по которой ранги будут рассчитаны, но также это нужно для кумулятивных сумм и lead. Всегда когда вы рассуждаете о "до" и "после" в SQL, вы должны явно указать по какому столбцу будет происходить упорядочение. В dplyr вы делаете это при помощи `arrange()`. Если выражения упорядочения опущено когда оно необходимо некоторые СУБД генерируют сообщение об ошибке, а некоторые возвращают неопределённый результат.
+
+<!-- 
 * The __frame clause__ defines which rows, or __frame__, that are passed 
   to the window function, describing which rows (relative to the current row)
   should be included. The frame clause provides two offsets which determine
@@ -404,42 +417,85 @@ In SQL, window functions have the form `[expression] OVER ([partition clause] [o
   current row ("current row"), and Inf means all following rows ("unbounded
   following)". The complete set of options is comprehensive, but fairly 
   confusing, and is summarised visually below.
+ -->
 
-    ![A visual summary of frame options](windows.png)
-    
+* __frame clause__ (предикат рамок) определяет какие строки, или __окна__, будут переданы в оконную функцию, описывая какие номера строк (относительно текущей) должны быть использованы. Предикат рамок представляет из себя две величины сдвига: сдвиги начала и конца окна. Дополнительно они могут принимать три специальных значения: -Inf означает все предшествующие строки (в SQL, "unbounded preceding"), 0 означает текущую колонку ("current row"), и Inf означает все последующие колонки ("unbounded following)". Полный набор вариантов всеобъемлющ, но довольно запутан, и проиллюстрирован ниже.
+
+    ![Иллюстрация опций окна](windows.png)
+
+<!--     
     Of the many possible specifications, there are only three that commonly
     used. They select between aggregation variants:
+ -->
 
-    * Recycled: `BETWEEN UNBOUND PRECEEDING AND UNBOUND FOLLOWING`
+    Из множества вариантов часто используются только три. Вот как они соотносятся с вариантами агрегирования:
+
+    * С повторным включением: `BETWEEN UNBOUND PRECEEDING AND UNBOUND FOLLOWING`
     
-    * Cumulative: `BETWEEN UNBOUND PRECEEDING AND CURRENT ROW`
+    * Кумулятивный: `BETWEEN UNBOUND PRECEEDING AND CURRENT ROW`
     
-    * Rolling: `BETWEEN 2 PRECEEDING AND 2 FOLLOWING`
-    
+    * Со скользящим окном: `BETWEEN 2 PRECEEDING AND 2 FOLLOWING`
+<!--     
     dplyr generates the frame clause based on whether your using a recycled
     aggregate or a cumulative aggregate.
+ -->
 
+    dplyr генерирует предикат рамок основываясь на том используете вы агрегатные функции с повторным включением или кумулятивные. 
+
+<!-- 
 It's easiest to understand these specifications by looking at a few examples. Simple examples just need the partition and order clauses:
+ -->
 
-* Rank each year within a player by number of home runs: 
+Легче всего будет разобраться на примерах. Самый простые требуют только предложения разделения и упорядочения:
+
+<!-- * Rank each year within a player by number of home runs:  -->
+* Ранжирует годы в пределах каждого игрока по количеству "хоум ранов" (бейсбольный термин): 
   `RANK() OVER (PARTITION BY playerID ORDER BY desc(H))`
 
-* Compute change in number of games from one year to the next:
+<!-- * Compute change in number of games from one year to the next: -->
+* Вычисляет изменение в количестве сыгранных игр между двумя последовательными годами:
   `G - LAG(G) OVER (PARTITION G playerID ORDER BY yearID)`
 
+<!-- 
 Aggregate variants are more verbose because we also need to supply the frame clause:
+ -->
 
+Агрегирующие варианты будут более длинными, потому что мы должны указывать предикат рамок: 
+
+<!-- 
 * Running sum of G for each player: `SUM(G) OVER (PARTITION BY playerID ORDER BY yearID BETWEEN UNBOUND PRECEEDING AND CURRENT ROW)`
+ -->
 
+<!-- АХТУНГ! Автор пишет здесь running хотя по смыслу здесь cumulative -->
+* Кумулятивная сумма G (количество игр) по каждому игроку: `SUM(G) OVER (PARTITION BY playerID ORDER BY yearID BETWEEN UNBOUND PRECEEDING AND CURRENT ROW)`
+
+<!-- 
 * Compute the career year: `YearID - min(YearID) OVER (PARTITION BY playerID BETWEEN UNBOUND PRECEEDING AND UNBOUND FOLLOWING) + 1` 
+ -->
 
+* Вычисляет длительность карьеры: `YearID - min(YearID) OVER (PARTITION BY playerID BETWEEN UNBOUND PRECEEDING AND UNBOUND FOLLOWING) + 1` 
+
+<!-- 
 * Compute a rolling average of games player: `MEAN(G) OVER (PARTITION BY playerID ORDER BY yearID BETWEEN 2 PRECEEDING AND 2 FOLLOWING)`
+ -->
 
+* Вычисляет скользящее среднее количества игр в год по каждому игроку: `MEAN(G) OVER (PARTITION BY playerID ORDER BY yearID BETWEEN 2 PRECEEDING AND 2 FOLLOWING)`
+
+<!-- 
 You'll notice that window functions in SQL are more verbose than in R. This is because different window functions can have different partitions, and the frame specification is more general than the two aggregate variants (recycled and cumulative) provided by dplyr. dplyr makes a tradeoff: you can't access rarely used window function capabilities (unless you write raw SQL), but in return, common operations are much more succinct.
+ -->
 
-### Translating dplyr to SQL
+Вы можете заметить что оконные функции в SQL многословнее. Это связано с тем что разные оконные функции классифицируются по разному и спецификация окна более имеет более обобщённую форму чем два варианта агрегирования (с повторным использованием и кумулятивный) предоставляемых dplyr. dplyr идёт на компромисс: вы не получаете доступ к редко используемым возможностям оконных функций (если не станете писать SQL самостоятельно), но взамен делает частые операции лаконичнее.
 
+<!-- ### Translating dplyr to SQL -->
+
+### Трансляция dplyr на SQL
+
+<!-- 
 To see how individual window functions are translated to SQL, we can use `translate_sql()` with the argument `window = TRUE`.
+ -->
+
+Чтобы увидеть как конкретные оконные функции преобразуются в SQL  мы должны использовать `translate_sql()` с аргументом `window = TRUE`.
 
 ```{r, message = FALSE}
 if (has_lahman("postgres")) {
@@ -452,8 +508,11 @@ if (has_lahman("postgres")) {
   print(translate_sql(lag(G), tbl = players_db, window = TRUE))
 }
 ```
-
+<!-- 
 If the tbl has been arranged previously, then that ordering will be used for the order clause:
+ -->
+
+Если tbl предварительно отсортирована, то такой порядок и будет использован в предикате порядка:
 
 ```{r, message = FALSE}
 if (has_lahman("postgres")) {
@@ -463,21 +522,39 @@ if (has_lahman("postgres")) {
   print(translate_sql(lag(G), tbl = players_by_year, window = TRUE))
 }
 ```
-
+<!-- 
 There are some challenges when translating window functions between R and SQL, because dplyr tries to keep the window functions as similar as possible to both the existing R analogues and to the SQL functions. This means that there are three ways to control the order clause depending on which window function you're using:
+ -->
 
-* For ranking functions, the ordering variable is the first argument: `rank(x)`,
-  `ntile(y, 2)`. If omitted or `NULL`, will use the default ordering associated 
-  with the tbl (as set by `arrange()`).
+<!-- Как по мне так вывод довольно опосредованно связан с первым утверждением -->
+Довольно сложно делать трансляцию между R и SQL, потому что dplyr пытается сохранить, на сколько это возможно, оконные функции похожими и на их аналоги в R, и на SQL-функции. Это означает что существует три способа управлять порядком в зависимости от используемой оконной функции:
 
+<!-- 
+* For ranking functions, the ordering variable is the first argument: `rank(x)`, `ntile(y, 2)`. If omitted or `NULL`, will use the default ordering associated with the tbl (as set by `arrange()`).
+ -->
+
+* Для функций ранжирования колонка по которой будет происходить упорядочение передаётся первым аргументом: `rank(x)`, `ntile(y, 2)`. Если опущено или `NULL`, будет использован порядок оп умолчанию ассоциированный с tbl (как установлено в `arrange()`).
+
+<!-- 
 * Accumulating aggegates only take a single argument (the vector to aggregate).
   To control ordering, use `order_by()`.
-  
+ -->  
+
+* Функции агрегирования с накоплением принимают только первый параметр (вектор для агрегирования). Для управления упорядочиванием используйте `order_by()`.
+
+<!-- 
 * Aggregates implemented in dplyr (`lead`, `lag`, `nth_value`, `first_value`, 
   `last_value`) have an `order_by` argument. Supply it to override the
   default ordering.
+ -->
 
+* Функции агрегирования реализованные в dplyr (`lead`, `lag`, `nth_value`, `first_value`, `last_value`) имеют аргумент `order_by`. Используйте его для переопределения порядка.
+
+<!-- 
 The three options are illustrated in the snippet below:
+ -->
+
+Эти три варианта проиллюстрированы во фрагменте ниже:
 
 ```{r, eval = FALSE}
 mutate(players,
@@ -486,26 +563,42 @@ mutate(players,
   lead(order_by = yearID, G)
 )
 ```
-
+<!-- 
 Currently there is no way to order by multiple variables, except by setting the default ordering with `arrange()`. This will be added in a future release. 
+ -->
 
-### Translating filters based on window functions
+Пока нет возможности упорядочивать по нескольким колонкам, за исключением возможности установки порядка по умолчанию через `arrange()`. Такая возможность будет добавлена в будущем.
 
+<!-- ### Translating filters based on window functions -->
+
+### Трансляция фильтров основанных на оконных функциях
+
+<!-- 
 There are some restrictions on window functions in SQL that make their use with `WHERE` somewhat challenging. Take this simple example, where we want to find the year each player played the most games:
+ -->
+
+Существуют некоторые ограничения на использование оконных функций в SQL которые делают их использование с `WHERE` несколько сложнее. Взгляните на этот простой пример, мы хотим год в котором игрок сыграл наибольшее количество игр:
 
 ```{r, eval = FALSE}
 filter(players, rank(G) == 1)
 ```
 
+<!-- 
 The following straightforward translation does not work because window functions are only allowed in `SELECT` and `ORDER_BY`. 
+ -->
+
+Следующее прямолинейное преобразование не работает по причине того что оконная функция доступна только в выражении `SELECT` и `ORDER_BY`. 
 
 ```
 SELECT *
 FROM Batting
 WHERE rank() OVER (PARTITION BY "playerID" ORDER BY "G") = 1;
 ```
-
+<!-- 
 Computing the window function in `SELECT` and referring to it in `WHERE` or `HAVING` doesn't work either, because `WHERE` and `HAVING` are computed before windowing functions. 
+ -->
+
+Вычисление оконной функции в `SELECT` и ссылка на неё в  `WHERE` или `HAVING` не будет работать в обоих случаях, потому что `WHERE` и `HAVING` вычисляются до применения оконной функции. 
 
 ```
 SELECT *, rank() OVER (PARTITION BY "playerID" ORDER BY "G") as rank
@@ -516,8 +609,11 @@ SELECT *, rank() OVER (PARTITION BY "playerID" ORDER BY "G") as rank
 FROM Batting
 HAVING rank = 1;
 ```
-
+<!-- 
 Instead, we must use a subquery:
+ -->
+
+Вместо этого мы можем использовать подзапрос:
 
 ```
 SELECT *
@@ -527,6 +623,8 @@ FROM (
 ) tmp
 WHERE rank = 1;
 ```
-
+<!-- 
 And even that query is a slightly simplification because it will also add a rank column to the original columns. dplyr takes care of generating the full, verbose, query, so you can focus on your data analysis challenges.
+ -->
 
+И даже этот запрос упрощён, потому что нужно ещё добавить колонку с рангами и исходным. dplyr берет на себя заботы по генерированию полного многословного запроса, так что вы сможете сосредоточиться на собственно анализе данных.
