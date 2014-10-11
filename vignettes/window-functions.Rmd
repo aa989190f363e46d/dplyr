@@ -33,7 +33,8 @@ batting <- select(tbl_df(Batting), playerID, yearID, teamID, G, AB:H)
 batting <- arrange(batting, playerID, yearID, teamID)
 players <- group_by(batting, playerID)
 
-# Для каждого игрока найти 2 года с максимальными значениями
+# Для каждого игрока найти 2 года с максимальным количеством "Хитов"
+# бейсбольный термин
 filter(players, min_rank(desc(H)) <= 2 & H > 0)
 # В пределах игр каждого игрока ранжировать годы по количеству сыграных игр
 mutate(players, G_rank = min_rank(G))
@@ -86,7 +87,7 @@ There are five main families of window functions. Two families are unrelated to 
   values in a vector, making it easy to compute differences and trends.
 -->
 
-* Сдвигающие `lead()` и `lag()` позволяют получить предыдущие или последующие значения вектора, упрощая вычисления пошаговых разностей и тенденций.
+* Сдвигающие, `lead()` и `lag()`, позволяют получить вектор сдивинутый вперед или назад, упрощая вычисления пошаговых разностей и тенденций.
 
 <!--
 The other three families are variations on familiar aggregate functions:
@@ -149,13 +150,13 @@ dense_rank(x)
 If you're familiar with R, you may recognise that `row_number()` and `min_rank()` can be computed with the base `rank()` function and various values of the `ties.method` argument. These functions are provided to save a little typing, and to make it easier to convert between R and SQL.
  -->
 
-Если вы знакомы с R вы можете понять как вычислить `row_number()` и `min_rank()` при помощи функции `rank` из базовой поставки и различных значений ее аргумента `ties.method`. Эти функции реализованы для для краткости и для более прозрачное трансляцией между R и SQL.
+Если вы знакомы с R вы можете понять как вычислить `row_number()` и `min_rank()` при помощи функции `rank` из базовой поставки и различных значений ее аргумента `ties.method`. Эти функции реализованы для для краткости и для более прозрачной трансляции между R и SQL.
 
 <!-- 
 Two other ranking functions return numbers between 0 and 1. `percent_rank()` gives the percentage of the rank; `cume_dist()` gives the proportion of values less than or equal to the current value. 
  -->
 
-Существуют две функции ранжирования, возвращающие значения в интервале от 0 до 1. `percent_rank()` вычисляет процентили рангов вместо значений рангов; `cume_dist()` вычисляет пропорцию рангов меньших либо равных значению текущего вместо значения.
+Существуют две функции ранжирования, возвращающие значения в интервале от 0 до 1. `percent_rank()` вычисляет процентили рангов вместо значений рангов; `cume_dist()` вычисляет пропорцию рангов меньших либо равных значению текущего вместо его значения.
 
 ```{r}
 cume_dist(x)
@@ -181,7 +182,7 @@ filter(players, cume_dist(desc(G)) < 0.1)
 Finally, `ntile()` divides the data up into `n` evenly sized buckets. It's a coarse ranking, and it can be used in with `mutate()` to divide the data into buckets for further summary. For example, we could use `ntile()` to divide the players within a team into four ranked groups, and calculate the average number of games within each group.
  -->
 
-И, наконец, `ntile()` делит данные на n наборов равного размера. Эта функция огрубляет ранги, и может быть использована с `mutate()` для разделения на совокупности для дальнейшего обобщения. Например, мы можем использовать `ntile()` для разделения игроков в команде на 4 ранжированные группы, и расчета среднего количества игра в каждой группе.
+И, наконец, `ntile()` делит данные на n наборов равного размера. Эта функция огрубляет ранги, и может быть использована с `mutate()` для разделения на совокупности для дальнейшего обобщения. Например, мы можем использовать `ntile()` для разделения игроков в команде на 4 ранжированные группы, и расчета среднего количества игр в каждой группе.
 
 ```{r}
 by_team_player <- group_by(batting, teamID, playerID)
@@ -240,7 +241,7 @@ You can use them to:
 * Find out when a value changes.
  -->  
 
-* Обнаружения когда значение изменилось.
+* Обнаружения момента когда значение изменилось.
 
 ```{r, results = "hide"}
 # Находит когда игрок сменил команду
@@ -251,7 +252,7 @@ filter(players, teamID != lag(teamID))
 `lead()` and `lag()` have an optional argument `order_by`. If set, instead of using the row order to determine which value comes before another, they will use another variable. This important if you have not already sorted the data, or you want to sort one way and lag another. 
  -->
 
-`lead()` и `lag()` принимают опциональный аргумент `order_by`. Если он установлен, то вместо порядка значений входных данных будет использован порядок какого-либо столбца. Это важно если вы обрабатываете не упорядоченные данные или упорядоченные не по тому столбцу в диапазоне значений которого который вы хотите выполнить сдвиг.
+`lead()` и `lag()` принимают опциональный аргумент `order_by`. Если он установлен, то вместо порядка значений входных данных будет использован порядок какого-либо столбца. Это важно если вы обрабатываете неупорядоченные данные или упорядоченные не по тому столбцу в диапазоне значений которого который вы хотите выполнить сдвиг.
 
 Это простой пример того что произойдёт если вы не установите аргумент `order_by` тогда когда он необходим:
 
@@ -290,7 +291,7 @@ filter(players, cumany(G > 150))
 Like lead and lag, you may want to control the order in which the accumulation occurs. None of the built in functions have an `order_by` argument so `dplyr` provides a helper: `order_by()`. You give it the variable you want to order by, and then the call to the window function:
  -->
 
-Как lead и lag, вы можете захотеть контролировать порядок в котором происходит накопление. Ни одна из функций в базовой поставке R не принимает аргумент `order_by`, однако `dplyr` предлагает вспомогательную функцию: `order_by()`. Ей необходимо передать переменную по которой вы хотите выполнить упорядочивание и вызов кумулятивной функции:
+Как с lead и lag вы можете захотеть контролировать порядок в котором происходит накопление. Ни одна из функций в базовой поставке R не принимает аргумент `order_by`, однако `dplyr` предлагает вспомогательную функцию: `order_by()`. Ей необходимо передать переменную по которой вы хотите выполнить упорядочивание и вызов кумулятивной функции:
 
 ```{r}
 x <- 1:10
@@ -313,7 +314,7 @@ R's vector recycling make it easy to select values that are higher or lower than
  -->
 
 <!-- это нужно будет ещё раз перевести на русский :( -->
-Механизм повторного использования значений векторов в R позволяет упростить такие операции как выборка значений больше или меньше чем итог по ним же. Я назвал это повторением агрегатных функций потому что значение функции используется повторно до достижения длины исходного вектора. Повторение агрегатных функций полезно если вы хотите отыскать все строки больше среднего, или меньше медианы.:
+Механизм повторного использования значений векторов в R позволяет упростить такие операции как выборка значений больше или меньше чем итог по ним же. Я назвал это повторением агрегатных функций потому что значение функции используется повторно до достижения длины исходного вектора. Повторение агрегатных функций полезно если вы хотите отыскать все строки больше среднего, или меньше медианы:
 
 ```{r, results = "hide"}
 filter(players, G > mean(G))
@@ -419,7 +420,7 @@ In SQL, window functions have the form `[expression] OVER ([partition clause] [o
   confusing, and is summarised visually below.
  -->
 
-* __frame clause__ (предикат рамок) определяет какие строки, или __окна__, будут переданы в оконную функцию, описывая какие номера строк (относительно текущей) должны быть использованы. Предикат рамок представляет из себя две величины сдвига: сдвиги начала и конца окна. Дополнительно они могут принимать три специальных значения: -Inf означает все предшествующие строки (в SQL, "unbounded preceding"), 0 означает текущую колонку ("current row"), и Inf означает все последующие колонки ("unbounded following)". Полный набор вариантов всеобъемлющ, но довольно запутан, и проиллюстрирован ниже.
+* __frame clause__ (предикат рамок или фрейма) определяет какие строки, или __окна__, будут переданы в оконную функцию, описывая какие номера строк (относительно текущей) должны быть использованы. Предикат рамок представляет из себя две величины сдвига: сдвиги начала и конца окна. Дополнительно они могут принимать три специальных значения: -Inf означает все предшествующие строки (в SQL, "unbounded preceding"), 0 означает текущую колонку ("current row"), и Inf означает все последующие колонки ("unbounded following)". Полный набор вариантов всеобъемлющ, но довольно запутан, и проиллюстрирован ниже.
 
     ![Иллюстрация опций окна](windows.png)
 
@@ -446,9 +447,12 @@ In SQL, window functions have the form `[expression] OVER ([partition clause] [o
 It's easiest to understand these specifications by looking at a few examples. Simple examples just need the partition and order clauses:
  -->
 
-Легче всего будет разобраться на примерах. Самый простые требуют только предложения разделения и упорядочения:
+Легче всего будет разобраться на примерах. Самые простые требуют только предикаты разделения и упорядочения:
 
 <!-- * Rank each year within a player by number of home runs:  -->
+<!-- 
+Кстати, в документации к Lahman 'H' в Batting это Hits, а хоум раны -- это 'HR'
+ -->
 * Ранжирует годы в пределах каждого игрока по количеству "хоум ранов" (бейсбольный термин): 
   `RANK() OVER (PARTITION BY playerID ORDER BY desc(H))`
 
@@ -485,7 +489,7 @@ Aggregate variants are more verbose because we also need to supply the frame cla
 You'll notice that window functions in SQL are more verbose than in R. This is because different window functions can have different partitions, and the frame specification is more general than the two aggregate variants (recycled and cumulative) provided by dplyr. dplyr makes a tradeoff: you can't access rarely used window function capabilities (unless you write raw SQL), but in return, common operations are much more succinct.
  -->
 
-Вы можете заметить что оконные функции в SQL многословнее. Это связано с тем что разные оконные функции классифицируются по разному и спецификация окна более имеет более обобщённую форму чем два варианта агрегирования (с повторным использованием и кумулятивный) предоставляемых dplyr. dplyr идёт на компромисс: вы не получаете доступ к редко используемым возможностям оконных функций (если не станете писать SQL самостоятельно), но взамен делает частые операции лаконичнее.
+Вы можете заметить что оконные функции в SQL многословнее. Это связано с тем что в R и SQL оконные функции классифицируются по разному и спецификация окна имеет более обобщённую форму чем два варианта агрегирования (с повторным использованием и кумулятивный) предоставляемых dplyr. dplyr идёт на компромисс: вы не получаете доступ к редко используемым возможностям оконных функций (если не станете писать SQL самостоятельно), но взамен делает частые операции лаконичнее.
 
 <!-- ### Translating dplyr to SQL -->
 
@@ -540,7 +544,7 @@ There are some challenges when translating window functions between R and SQL, b
   To control ordering, use `order_by()`.
  -->  
 
-* Функции агрегирования с накоплением принимают только первый параметр (вектор для агрегирования). Для управления упорядочиванием используйте `order_by()`.
+* Функции агрегирования с накоплением принимают только первый параметр (вектор для агрегирования). Для управления упорядочением используйте `order_by()`.
 
 <!-- 
 * Aggregates implemented in dplyr (`lead`, `lag`, `nth_value`, `first_value`, 
