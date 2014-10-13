@@ -13,47 +13,56 @@ knitr::opts_chunk$set(
 options(dplyr.print_min = 4L, dplyr.print_max = 4L)
 ```
 
-# Introduction to dplyr
+<!-- # Introduction to dplyr -->
+# Введение в dplyr[*](http://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html)
 
-When working with data you must:
+<!-- When working with data you must: -->
+При обработке данных вы должны:
 
-* Figure out what you want to do.
+<!-- * Figure out what you want to do. -->
+* Представить что вы хотите получить.
+<!-- * Precisely describe what you want in the form of a computer program. -->
+* Детально описать желаемое в виде компьютерной программы.
+<!-- * Execute the code. -->
+* Выполнить код.
 
-* Precisely describe what you want in the form of a computer program.
+<!-- The dplyr package makes each of these steps as fast and easy as possible by: -->
+Пакет `dplyr` делает каждый из этих шагов на столько простым и быстрым на сколько это возможно следующим образом:
 
-* Execute the code.
-
-The dplyr package makes each of these steps as fast and easy as possible by:
-
-* Elucidating the most common data manipulation operations, so that your
+<!-- * Elucidating the most common data manipulation operations, so that your
   options are helpfully constrained when thinking about how to tackle a
-  problem.
-
-* Providing simple functions that correspond to the most common
+  problem. -->
+* Выделяя наиболее общие операции манипулирования данными, которые позволяют вам сосредоточиться на решении задачи, а не на манипулировании.
+<!-- * Providing simple functions that correspond to the most common
   data manipulation verbs, so that you can easily translate your thoughts
-  into code.
+  into code. -->
+* Предлагая набор простых функций, соответствующих наиболее общим атомарным операциям манипулирования данными, так чтобы замысел максимально легко был выражен в коде.
+<!-- * Using efficient data storage backends, so that you spend as little time
+  waiting for the computer as possible. -->
+* Используя эффективные хранилища данных чтобы максимально сократить время ожидания результата.
 
-* Using efficient data storage backends, so that you spend as little time
-  waiting for the computer as possible.
+<!-- The goal of this document is to introduce you to the basic tools that dplyr provides, and show how you to apply them to data frames. Other vignettes provide more details on specific topics: -->
+Цель этого документа -- дать представление о базовых инструментах предоставляемых `dplyr`, и продемонстрировать их применение к структурам данных типа `data.frame`. Также существуют отдельные руководства по следующим темам:
 
-The goal of this document is to introduce you to the basic tools that dplyr provides, and show how you to apply them to data frames. Other vignettes provide more details on specific topics:
-
-* databases: as well as in memory data frames, dplyr also connects to
+<!-- * databases: as well as in memory data frames, dplyr also connects to
   databases. It allows you to work with remote, out-of-memory data, using
   exactly the same tools, because dplyr will translate your R code into
-  the appropriate SQL.
-
-* benchmark-baseball: see how dplyr compares to other tools for data
-  manipulation on a realistic use case.
-
-* window-functions: a window function is a variation on an aggregation
+  the appropriate SQL. -->
+* `databases`[*](http://cran.rstudio.com/web/packages/dplyr/vignettes/databases.html): наравне с объектами в памяти `dplyr` также может обращаться к данным баз данных. Это позволяет вам работать с удалёнными (в смысле нахождения на расстоянии) данными, используя в точности те же инструменты, потому что `dplyr` будет транслировать ваш код на R в соответствующие SQL-запросы.
+<!-- * benchmark-baseball: see how dplyr compares to other tools for data
+  manipulation on a realistic use case. -->
+* `benchmark-baseball`: рассматривает как `dplyr` выглядит в сравнении с другими инструментами для манипулирования данными на реалистичной задаче.
+<!-- * window-functions: a window function is a variation on an aggregation
   function. Where an aggregate function uses `n` inputs to produce 1 
-  output, a window function uses `n` inputs to produce `n` outputs.
+  output, a window function uses `n` inputs to produce `n` outputs. -->
+* `window-functions`[*](http://cran.rstudio.com/web/packages/dplyr/vignettes/window-functions.html): функции агрегирования по окну -- это разновидность функций агрегирования, где функция агрегирования вычисляет по n аргументам 1 значение, а функции агрегирования по окну получает n аргументов и возвращает n значений.
 
-## Data: nycflights13
+<!-- ## Data: nycflights13 -->
+## Набор данных nycflights13
 
-To explore the basic data manipulation verbs of dplyr, we'll start with the built in
-`nycflights13` data frame. This dataset contains all `r nrow(nycflights13::flights)` flights that departed from New York City in 2013. The data comes from the US [Bureau of Transporation Statistics](http://www.transtats.bts.gov/DatabaseInfo.asp?DB_ID=120&Link=0), and is documented in `?nycflights13`
+<!-- To explore the basic data manipulation verbs of dplyr, we'll start with the built in
+`nycflights13` data frame. This dataset contains all `r nrow(nycflights13::flights)` flights that departed from New York City in 2013. The data comes from the US [Bureau of Transporation Statistics](http://www.transtats.bts.gov/DatabaseInfo.asp?DB_ID=120&Link=0), and is documented in `?nycflights13` -->
+Для исследования основных операций манипулирования данными в `dplyr` мы будем использовать встроенный набор данных `nycflights13`. Он содержит данные всех `r nrow(nycflights13::flights)` рейсов из Нью Йорка за 2013 год, и предоставлен, как написано в `?nycflights13`, [бюро по перемещениям США](http://www.transtats.bts.gov/DatabaseInfo.asp?DB_ID=120&Link=0).
 
 ```{r}
 library(nycflights13)
@@ -61,74 +70,92 @@ dim(flights)
 head(flights)
 ```
 
-dplyr can work with data frames as is, but if you're dealing with large data, it's worthwhile to convert them to a `tbl_df`: this is a wrapper around a data frame that won't accidentally print a lot of data to the screen.
+<!-- dplyr can work with data frames as is, but if you're dealing with large data, it's worthwhile to convert them to a `tbl_df`: this is a wrapper around a data frame that won't accidentally print a lot of data to the screen. -->
 
-## Single table verbs
+`dplyr` может работать с `data.frame` непосредственно, но при работе с большими объёмами данных стоит конвертировать их в `tbl_df`, обёртку вокруг `data.frame` которая не станет по случайности выводить кучу данных на экран (это может очень медленным процессом).
 
-Dplyr aims to provide a function for each basic verb of data manipulating:
+<!-- ## Single table verbs -->
+## Операции манипулирующие одной таблицей
 
-* `filter()` (and `slice()`)
+<!-- Dplyr aims to provide a function for each basic verb of data manipulating: -->
+Dplyr ставит своей целью дать функции для всех основных пераций манипулирования данным:
+
+* `filter()` (и `slice()`)
 * `arrange()`
-* `select()` (and `rename()`)
+* `select()` (и `rename()`)
 * `distinct()`
-* `mutate()` (and `transmute()`)
+* `mutate()` (и `transmute()`)
 * `summarise()`
-* `sample_n()` and `sample_frac()`
+* `sample_n()` и `sample_frac()`
 
-If you've used plyr before, many of these will be familar.
+<!-- If you've used plyr before, many of these will be familar. -->
+Для тех кто пользовался до этого `plyr` многие из них будут знакомы.
 
-## Filter rows with `filter()`
+<!-- ## Filter rows with `filter()` -->
+### Фильтрация строк при помощи filter()
 
-`filter()` allows you to select a subset of the rows of a data frame. The first argument is the name of the data frame, and the second and subsequent are filtering expressions evaluated in the context of that data frame:
+<!-- `filter()` allows you to select a subset of the rows of a data frame. The first argument is the name of the data frame, and the second and subsequent are filtering expressions evaluated in the context of that data frame: -->
+`filter()` позволяет вам выбрать подмножество строк из `data.frame`. Первый аргумент -- имя набора данных, второй и последующие -- условия фильтра в контексте этого набора данных.
 
-For example, we can select all flights on January 1st with:
+<!-- For example, we can select all flights on January 1st with: -->
+Например, мы можем выбрать все вылет 1-го января следующим образом:
 
 ```{r}
 filter(flights, month == 1, day == 1)
 ```
 
-This is equivalent to the more verbose:
+<!-- This is equivalent to the more verbose: -->
+Что будет эквивалентно более многословному (длиннее на целых 10 символов!) варианту:
 
 ```{r, eval = FALSE}
 flights[flights$month == 1 & flights$day == 1, ]
 ```
 
-`filter()` works similarly to `subset()` except that you can give it any number of filtering conditions which are joined together with `&` (not `&&` which is easy to do accidentally!).  You can use other boolean operators explicitly:
+<!-- `filter()` works similarly to `subset()` except that you can give it any number of filtering conditions which are joined together with `&` (not `&&` which is easy to do accidentally!).  You can use other boolean operators explicitly: -->
+`filter()` работает аналогично `subset()` за тем исключением, что вы можете ему передать любое количество условий для фильтра, которые будут объединены вместе через `&` (логическое И, но не `&&` с которым можно случайно перепутать). Вы можете также использовать любые другие логически связки:
 
 ```{r, eval = FALSE}
 filter(flights, month == 1 | month == 2)
 ```
 
-To select rows by position, use `slice()`:
+<!-- To select rows by position, use `slice()`: -->
+Для выборки строк по позициям используется `slice()`:
 
 ```{r}
 slice(flights, 1:10)
 ```
 
-## Arrange rows with `arrange()`
+<!-- ## Arrange rows with `arrange()` -->
+### Упорядочение строк при помощи arrange()
 
-`arrange()` works similarly to `filter()` except that instead of filtering or selecting rows, it reorders them. It takes a data frame, and a set of column names (or more complicated expressions) to order by. If you provide more than one column name, each additional column will be used to break ties in the values of preceding columns:
+<!-- `arrange()` works similarly to `filter()` except that instead of filtering or selecting rows, it reorders them. It takes a data frame, and a set of column names (or more complicated expressions) to order by. If you provide more than one column name, each additional column will be used to break ties in the values of preceding columns: -->
+`arrange()`, в свою очередь, работает аналогично `filter()` за исключением того, что вместо выбора строк она переупорядочивает их. Функция получает на вход имя таблицы данных и список имён колонок (или более сложное выражение) для упорядочения по ним.  Если будет указано больше одной колонки, то каждая следующая колонка будет упорядочиваться в пределах каждого отдельного набора значений предыдущих:
+<!-- На этом месте я просто удивлён на сколько косно это звучит на русском по сравнению с английским. -->
 
 ```{r}
 arrange(flights, year, month, day)
 ```
 
-Use `desc()` to order a column in descending order:
+<!-- Use `desc()` to order a column in descending order: -->
+Необходимо использовать `desc()` чтобы задать порядок по убыванию:
 
 ```{r}
 arrange(flights, desc(arr_delay))
 ```
 
-`dplyr::arrange()` works the same way as `plyr::arrange()`. It's a straighforward wrapper around `order()` that requires less typing. The previous code is equivalent to:
+<!-- `dplyr::arrange()` works the same way as `plyr::arrange()`. It's a straighforward wrapper around `order()` that requires less typing. The previous code is equivalent to: -->
+`dplyr::arrange()` работает так же как и `plyr::arrange()`. Это простая обёртка над `order()`, только позволяющая меньше набирать на клавиатуре. Предыдущий пример эквивалентен такому выражению:
 
 ```{r, eval = FALSE}
 flights[order(flights$year, flights$month, flights$day), ]
 flights[order(desc(flights$arr_delay)), ]
 ```
 
-## Select columns with `select()`
+<!-- ## Select columns with `select()` -->
+### Выбор колонок при помощи select()
 
-Often you work with large datasets with many columns where only a few are actually of interest to you. `select()` allows you to rapidly zoom in on a useful subset using operations that usually only work on numeric variable positions:
+<!-- Often you work with large datasets with many columns where only a few are actually of interest to you. `select()` allows you to rapidly zoom in on a useful subset using operations that usually only work on numeric variable positions: -->
+Часто случается что при работе с большим набором данных вам на самом деле интересны только некоторые колонки. `select()` позволяет вам быстро сфокусироваться на интересующей части колонок, используя при этом символические имена на манер номеров колонок:
 
 ```{r}
 # Select columns by name
@@ -139,36 +166,45 @@ select(flights, year:day)
 select(flights, -(year:day))
 ```
 
-This function works similarly to the `select` argument to the `base::subset()`. It's its own function in dplyr, because the dplyr philosophy is to have small functions that each do one thing well.
+<!-- This function works similarly to the `select` argument to the `base::subset()`. It's its own function in dplyr, because the dplyr philosophy is to have small functions that each do one thing well. -->
+Эта функция работает подобно аргументу `select` в `base::subset()`. Отдельная функция добавлена для поддержания стройности идеологии `dplyr`, заключающейся в наличии функций каждая из которых делает только одну конкретную операцию и наиболее подходящим образом.
 
-There are a number of helper functions you can use within `select()`, like `starts_with()`, `ends_with()`, `matches()` and `contains()`. Theese let you quickly match larger blocks of variable that meet some criterion. See `?select` for more details.
+<!-- There are a number of helper functions you can use within `select()`, like `starts_with()`, `ends_with()`, `matches()` and `contains()`. Theese let you quickly match larger blocks of variable that meet some criterion. See `?select` for more details. -->
+С `select()` используется ряд вспомогательных, такие как `starts_with()`, `ends_with()`, `matches()` и `contains()`. Они упрощают получение больших блоков колонок которые удовлетворяют некоторому критерию. Для получения подробностей смотрите `?select`.
 
-You can rename variables with `select()` by using named arguments:
+<!-- You can rename variables with `select()` by using named arguments: -->
+При помощи `select()` вы можете переименовывать колонки используя именованные аргументы:
 
 ```{r}
 select(flights, tail_num = tailnum)
 ```
 
-But because `select()` drops all the variables not explicitly mentioned, it's not that use. Instead, use `rename()`:
+<!-- But because `select()` drops all the variables not explicitly mentioned, it's not that use. Instead, use `rename()`: -->
+Но поскольку она отбрасывает все явно не указанные аргументы, используйте вместо неё для этого `rename()`:
 
 ```{r}
 rename(flights, tail_num = tailnum)
 ```
 
-## Extract distinct (unique) rows
+<!-- ## Extract distinct (unique) rows -->
+### Извлечение не повторяющихся (уникальных) строк 
 
-A common use of `select()` is to find out what values are set of variables takes. This is particularly useful in conjunction with the `distinct()` verb which only returns the unique values in a table.
+<!-- A common use of `select()` is to find out what values are set of variables takes. This is particularly useful in conjunction with the `distinct()` verb which only returns the unique values in a table. -->
+Чаще всего `select()` используют для выяснения какие значения принимают значения колонки. В частности это удобно использовать совместно с `distinct()`, операцией, которая возвращает только строки с уникальными значениями.
 
 ```{r}
 distinct(select(flights, tailnum))
 distinct(select(flights, origin, dest))
 ```
 
-(This is very similar to `base::unique()` but should be much faster.)
+<!-- (This is very similar to `base::unique()` but should be much faster.) -->
+(Это очень похоже на `base::unique()`, но должно работать быстрее)
 
-## Add new columns with `mutate()`
+<!-- ## Add new columns with `mutate()` -->
+### Добавление новых колонок при помощи mutate()
 
-As well as selecting from the set of existing columns, it's often useful to add new columns that are functions of existing columns.  This is the job of `mutate()`:
+<!-- As well as selecting from the set of existing columns, it's often useful to add new columns that are functions of existing columns.  This is the job of `mutate()`: -->
+Бывает полезно не только выбрать интересующие колонки, но и вычислить на их основании значения некоторой другой колонки. Для этих целей предназначена `mutate()`:
 
 ```{r}
 mutate(flights,
@@ -176,7 +212,8 @@ mutate(flights,
   speed = distance / air_time * 60)
 ```
 
-`dplyr::mutate()` works the same way as `plyr::mutate()` and similarly to `base::transform()`. The key difference between `mutate()` and `transform()` is that mutate allows you to refer to columns that you just created:
+<!-- `dplyr::mutate()` works the same way as `plyr::mutate()` and similarly to `base::transform()`. The key difference between `mutate()` and `transform()` is that mutate allows you to refer to columns that you just created: -->
+`dplyr::mutate()` работает аналогично `plyr::mutate()` и аналогично `base::transform()`. Главное отличие между `mutate()` and `transform()` в том что первая может ссылаться в вычислениях на колонку которая создаётся в рамках того же вызова функции:
 
 ```{r}
 mutate(flights,
@@ -193,7 +230,8 @@ transform(flights,
 #> Error: object 'gain' not found
 ```
 
-If you only want to keep the new variables, use `transmute()`:
+<!-- If you only want to keep the new variables, use `transmute()`: -->
+Если вам нужно сохранить только новые колонки используйте `transmute()`:
 
 ```{r}
 transmute(flights,
@@ -202,67 +240,89 @@ transmute(flights,
 )
 ```
 
-## Summarise values with `summarise()`
+<!-- ## Summarise values with `summarise()` -->
+### Вычисление итогов при помощи summarise()
 
-The last verb is `summarise()`, which collapses a data frame to a single row. It's not very useful yet:
+<!-- The last verb is `summarise()`, which collapses a data frame to a single row. It's not very useful yet: -->
+Ещё одна операция -- `summarise()`, она просто сворачивает таблицу данных в одну строку. Пока это не слишком полезно:
 
 ```{r}
 summarise(flights,
   delay = mean(dep_delay, na.rm = TRUE))
 ```
 
-This is exactly equivalent to `plyr::summarise()`.
+<!-- This is exactly equivalent to `plyr::summarise()`. -->
+Эта функция в точности соответствует `plyr::summarise()`.
 
-## Randomly sample rows with `sample_n()` and `sample_frac()`
+<!-- ## Randomly sample rows with `sample_n()` and `sample_frac()` -->
+### Выбор случайного набора строк при помощи `sample_n()` и `sample_frac()`
 
-You can use `sample_n()` and `sample_frac()` to take a random sample of rows, either a fixed number for `sample_n()` or a fixed fraction for `sample_frac()`.
+<!-- You can use `sample_n()` and `sample_frac()` to take a random sample of rows, either a fixed number for `sample_n()` or a fixed fraction for `sample_frac()`. -->
+Вы можете воспользоваться `sample_n()` или `sample_frac()` для получения случайного набора строк, фиксированного числа с `sample_n()` или в фиксированной пропорции от всего набора с `sample_frac()`.
 
 ```{r}
 sample_n(flights, 10)
 sample_frac(flights, 0.01)
 ```
 
-Use `replace = TRUE` to perform a bootstrap sample, and optionally weight the sample with the `weight` argument.
+<!-- Use `replace = TRUE` to perform a bootstrap sample, and optionally weight the sample with the `weight` argument. -->
+Аргумент `replace = TRUE` позволяет повторно выбирать одну и ту же строку (как при бутстрепинге), опционально можно указать вес в итоговой выборке каждой исходной строки при помощи аргумента `weight`.
 
-## Commonalities
+<!-- ## Commonalities -->
+## Итог
 
-You may have noticed that all these functions are very similar:
+<!-- You may have noticed that all these functions are very similar: -->
+У вас может возникнуть впечатление что все перечисленные функции имеют что-то общее:
 
-* The first argument is a data frame.
+<!-- * The first argument is a data frame. -->
+* Первый аргумент -- `data.frame`.
+<!-- * The subsequent arguments describe what to do with it, and you can refer
+  to columns in the data frame directly without using `$`. -->
+* Последующие аргументы описываю то что вы хотите проделать с первым, и вы можете обращаться к атрибутам первого аргумента по именам, не используя для доступа `$`.
+<!-- * The result is a new data frame -->
+* Возвращаемый результат -- новый `data.frame`.
 
-* The subsequent arguments describe what to do with it, and you can refer
-  to columns in the data frame directly without using `$`.
+<!-- Together these properties make it easy to chain together multiple simple steps to achieve a complex result. -->
+Все эти свойства вместе позволяют легко комбинировать множество вызовов в одну цепочку для вычисления сложного результата.
 
-* The result is a new data frame
+<!-- These five functions provide the basis of a language of data manipulation. At the most basic level, you can only alter a tidy data frame in five useful ways: you can reorder the rows (`arrange()`), pick observations and variables of interest (`filter()` and `select()`), add new variables that are functions of existing variables (`mutate()`) or collapse many values to a summary (`summarise()`). The remainder of the language comes from applying the five functions to different types of data, like to grouped data, as described next.
+ -->
+Эти пять функций создают основу для языка манипулирования данными. На самом простом уровне вы можете только изменить что-либо в наборе данных пятью способами: изменить порядок строк (`arrange()`), выбрать наблюдения или атрибуты (`filter()` и `select()`), добавить вычисляемые атрибуты (`mutate()`) или свернуть набор в итог (`summarise()`). Оставшаяся часть этого языка образуется из применения перечисленных функций к различным типам данных, например группированным данным, как описано ниже.
 
-Together these properties make it easy to chain together multiple simple steps to achieve a complex result.
+<!-- # Grouped operations -->
+# Операции над сгруппированными данными
 
-These five functions provide the basis of a language of data manipulation. At the most basic level, you can only alter a tidy data frame in five useful ways: you can reorder the rows (`arrange()`), pick observations and variables of interest (`filter()` and `select()`), add new variables that are functions of existing variables (`mutate()`) or collapse many values to a summary (`summarise()`). The remainder of the language comes from applying the five functions to different types of data, like to grouped data, as described next.
+<!-- These verbs are useful, but they become really powerful when you combine them with the idea of "group by", repeating the operation individually on groups of observations within the dataset. In dplyr, you use the `group_by()` function to describe how to break a dataset down into groups of rows. You can then use the resulting object in exactly the same functions as above; they'll automatically work "by group" when the input is a grouped. -->
+Вышеописанные функции полезны сами по себе, но особую мощь они приобретают в комбинации с концепцией (нет, не коллективной безопасности (: ) группировки, повторения вычислений для каждой группы наблюдений в отдельности. В `dplyr` используется функция `group_by()` для разбиения набора данных на части по строкам. Вы можете использовать вывод функции `group_by()` непосредственно как первый аргумент перечисленных выше пяти основных функций, они сами обработают правильно набор данных разбитый на группы.
 
-# Grouped operations
+<!-- The verbs are affected by grouping as follows: -->
+Команды реагируют на группировку следующим образом:
 
-These verbs are useful, but they become really powerful when you combine them with the idea of "group by", repeating the operation individually on groups of observations within the dataset. In dplyr, you use the `group_by()` function to describe how to break a dataset down into groups of rows. You can then use the resulting object in exactly the same functions as above; they'll automatically work "by group" when the input is a grouped.
+<!-- * grouped `select()` is the same ungrouped `select()`, excepted that retains 
+  grouping variables are always retained.  -->
+* `select()` не изменяет своего поведения за тем исключением что столбцы по которым данные сгруппированы буду выбираться всегда.  
 
-The verbs are affected by grouping as follows:
+<!-- * grouped `arrange()` orders first by grouping variables -->
+* `arrange()` сначала выстраивает в порядке группирующих столбцов, а затем по условию из своего аргумента.
 
-* grouped `select()` is the same ungrouped `select()`, excepted that retains 
-  grouping variables are always retained. 
-   
-* grouped `arrange()` orders first by grouping variables
-
-* `mutate()` and `filter()` are most useful in conjunction with window 
+<!-- * `mutate()` and `filter()` are most useful in conjunction with window 
   functions (like `rank()`, or `min(x) == x`), and are described in detail in 
-  `vignette("window-function")`.
+  `vignette("window-function")`. -->
+* `mutate()` и `filter()` наиболее полезны в совокупности с оконными функциями[*](http://cran.rstudio.com/web/packages/dplyr/vignettes/window-functions.html)((подобными `rank()`, или `min(x) == x`)), но детально это описано в отдельном руководстве `vignette("window-function")`.
   
-* `sample_n()` and `sample_frac()` sample the specified number/fraction of
-  rows in each group.
-  
-* `slice()` extracts rows within each group.
-  
-* `summarise()` is easy to understand and very useful, and is described in 
-  more detail below.
+<!-- * `sample_n()` and `sample_frac()` sample the specified number/fraction of
+  rows in each group. -->
+* `sample_n()` и `sample_frac()` выбирают из каждой группы отдельно указанное количество строк.
 
-In the following example, we split the complete dataset into individual planes and then summarise each plane by counting the number of flights (`count = n()`) and computing the average distance (`dist = mean(Distance, na.rm = TRUE)`) and delay (`delay = mean(ArrDelay, na.rm = TRUE)`). We then use ggplot2 to display the output.
+<!-- * `slice()` extracts rows within each group. -->
+* `slice()` также выбирает из каждой группы необходимое количество строк.
+
+<!-- * `summarise()` is easy to understand and very useful, and is described in 
+  more detail below. -->
+* `summarise()` в данном случае весьма полезна и проста в применении как будет показано далее.
+
+<!-- In the following example, we split the complete dataset into individual planes and then summarise each plane by counting the number of flights (`count = n()`) and computing the average distance (`dist = mean(Distance, na.rm = TRUE)`) and delay (`delay = mean(ArrDelay, na.rm = TRUE)`). We then use ggplot2 to display the output. -->
+В следующем примере мы разделим набор данных по самолётам и рассчитаем количество вылетов (`count = n()`) и средние дальность полёта (`dist = mean(Distance, na.rm = TRUE)`) и задержку вылета (`delay = mean(ArrDelay, na.rm = TRUE)`). Затем построим график при помощи `ggplot2`.
 
 ```{r, warning = FALSE, message = FALSE}
 planes <- group_by(flights, tailnum)
@@ -272,25 +332,28 @@ delay <- summarise(planes,
   delay = mean(arr_delay, na.rm = TRUE))
 delay <- filter(delay, count > 20, dist < 2000)
 
-# Interestingly, the average delay is only slightly related to the
-# average distance flown by a plane.
+# Интересно, на сколько зависит 
+# средняя задержка от средней дальности полёта 
 ggplot(delay, aes(dist, delay)) +
   geom_point(aes(size = count), alpha = 1/2) +
   geom_smooth() +
   scale_size_area()
 ```
 
-You use `summarise()` with __aggregate functions__, which take a vector of values, and return a single number. There are many useful functions in base R like `min()`, `max()`, `mean()`, `sum()`, `sd()`, `median()`, and `IQR()`. dplyr provides a handful of others:
+<!-- You use `summarise()` with __aggregate functions__, which take a vector of values, and return a single number. There are many useful functions in base R like `min()`, `max()`, `mean()`, `sum()`, `sd()`, `median()`, and `IQR()`. dplyr provides a handful of others: -->
+Вы использовали `summarise()` с функциями агрегирования, получающими вектор значений и возвращающими скалярное значение. Множество таких функций есть в базовой среде R, например `min()`, `max()`, `mean()`, `sum()`, `sd()`, `median()` и `IQR()`. `dplyr` предлагает ещё несколько полезных:
 
-* `n()`: number of observations in the current group
-
-* `n_distinct(x)`: count the number of unique values in `x`.
-
-* `first(x)`, `last(x)` and `nth(x, n)` - these work
+<!-- * `n()`: number of observations in the current group -->
+* `n()`: количество наблюдений в группе,
+<!-- * `n_distinct(x)`: count the number of unique values in `x`. -->
+* `n_distinct(x)`: количество наблюдений с уникальным значением переменной x.
+<!-- * `first(x)`, `last(x)` and `nth(x, n)` - these work
   similarly to `x[1]`, `x[length(x)]`, and `x[n]` but give you more control
-  of the result if the value isn't present.
+  of the result if the value isn't present. -->
+* `first(x)`, `last(x)` и `nth(x, n)` -- работают подобно `x[1]`, `x[length(x)]`, и `x[n]`, но дают больше контроля над результатом если значение не может быть получено.
 
-For example, we could use these to find the number of planes and the number of flights that go to each possible destination:
+<!-- For example, we could use these to find the number of planes and the number of flights that go to each possible destination: -->
+Например, мы можем использовать их чтобы найти количество самолётов и количество вылетов во все возможные пункты назначения:
 
 ```{r}
 destinations <- group_by(flights, dest)
@@ -300,9 +363,12 @@ summarise(destinations,
 )
 ```
 
-You can also use any function that you write yourself. For performance, dplyr provides optimised C++ versions of many of these functions. If you want to provide your own C++ function, see the hybrid-evaluation vignette for more details.
+<!-- You can also use any function that you write yourself. For performance, dplyr provides optimised C++ versions of many of these functions. If you want to provide your own C++ function, see the hybrid-evaluation vignette for more details. -->
+Также вы можете применить собственную функцию. Для повышения производительности многие функции `dplyr` написаны на `C++`. Если вы хотите использовать собственную функцию на `C++` обратите внимание на соответствующее руководство[*](http://cran.rstudio.com/web/packages/dplyr/vignettes/hybrid-evaluation.html) для уточнения деталей.
 
-When you group by multiple variables, each summary peels off one level of the grouping. That makes it easy to progressively roll-up a dataset:
+<!-- Мутно? Взгляни на оригинала и попробуй прояснить сам: -->
+<!-- When you group by multiple variables, each summary peels off one level of the grouping. That makes it easy to progressively roll-up a dataset: -->
+При группировке по нескольким переменным вы можете также получить "послойные" итоги для каждого уровня в отдельности и по очереди. Этот приём позволяет кумулятивно получать свёртку набора данных:
 
 ```{r}
 daily <- group_by(flights, year, month, day)
@@ -311,11 +377,14 @@ daily <- group_by(flights, year, month, day)
 (per_year  <- summarise(per_month, flights = sum(flights)))
 ```
 
-However you need to be careful when progressively rolling up summaries like this: it's ok for sums and counts, but you need to think about weighting for means and variances, and it's not possible to do exactly for medians.
+<!-- However you need to be careful when progressively rolling up summaries like this: it's ok for sums and counts, but you need to think about weighting for means and variances, and it's not possible to do exactly for medians. -->
+Однако необходимо проявлять осторожность при таком методе получения итогов: он подойдёт для сумм и количеств, но нужно задуматься при использовании средних и дисперсий, и уж точно не применять с медианой.
 
-## Chaining
+<!-- ## Chaining -->
+# Последовательные (конвейерные) манипуляции 
 
-The dplyr API is functional in the sense that function calls don't have side-effects, and you must always save their results. This doesn't lead to particularly elegant code if you want to do many operations at once. You either have to do it step-by-step:
+<!-- The dplyr API is functional in the sense that function calls don't have side-effects, and you must always save their results. This doesn't lead to particularly elegant code if you want to do many operations at once. You either have to do it step-by-step: -->
+API (легендарный мощный ЭПиАй) `dplyr` функционален, в том смысле, что вызовы функций не имеют побочных эффектов, и вы должны сами сохранять результаты. Это обстоятельство не способствует написанию элегантного кода если вам нужно выполнить множество операций подряд. Вы, конечно, можете выполнять их шаг за шагом:
 
 ```{r, eval = FALSE}
 a1 <- group_by(flights, year, month, day)
@@ -326,7 +395,8 @@ a3 <- summarise(a2,
 a4 <- filter(a3, arr > 30 | dep > 30)
 ```
 
-Or if you don't want to save the intermediate results, you need to wrap the function calls inside each other:
+<!-- Or if you don't want to save the intermediate results, you need to wrap the function calls inside each other: -->
+Или, если вы не желаете сохранять промежуточные результаты, можно передавать вызовы функций как аргументы, вкладывая один в другой:
 
 ```{r}
 filter(
@@ -342,7 +412,8 @@ filter(
 )
 ```
 
-This is difficult to read because the order of the operations is from inside to out, and the arguments are a long way away from the function. To get around this problem, dplyr provides the `%>%` operator. `x %>% f(y)` turns into `f(x, y)` so you can use it to rewrite multiple operations so you can read from left-to-right, top-to-bottom:
+<!-- This is difficult to read because the order of the operations is from inside to out, and the arguments are a long way away from the function. To get around this problem, dplyr provides the `%>%` operator. `x %>% f(y)` turns into `f(x, y)` so you can use it to rewrite multiple operations so you can read from left-to-right, top-to-bottom: -->
+Что создаёт сложности с чтением, так как порядок выполнения начинается из середины выражения и аргументы отдаляются от текста вызова функции. Чтобы обойти это проблему `dplyr` использует оператор `%>%`. `x %>% f(y)` преобразуется в `f(x, y)`, что можно использовать для преобразования кода вызовов в удобный для чтения слева направо, сверху вниз:
 
 ```{r, eval = FALSE}
 flights %>%
@@ -356,62 +427,87 @@ flights %>%
 ```
 
 # Other data sources
+# Другие источники данных
 
-As well as data frames, dplyr works with data stored in other ways, like data tables, databases and multidimensional arrays.
+<!-- As well as data frames, dplyr works with data stored in other ways, like data tables, databases and multidimensional arrays. -->
+Также как с `data.frame`, `dplyr` может работать с данными представленными другими способами, такими как `data tables`, базы данных и многомерные массивы.
 
+<!-- ## Data table -->
 ## Data table
 
-dplyr also provides [data table](http://datatable.r-forge.r-project.org/) methods for all verbs. If you're using data.tables already this lets you use dplyr syntax for data manipulation, and data.table for everything else.
+<!-- dplyr also provides [data table](http://datatable.r-forge.r-project.org/) methods for all verbs. If you're using data.tables already this lets you use dplyr syntax for data manipulation, and data.table for everything else. -->
+`dplyr` также предлагает все перечисленные методы манипулирования данным и для объектов типа `data.tables`[*](http://datatable.r-forge.r-project.org/), вы просто должны заменить набор данных на `data.table`.
 
-For multiple operations, data.table can be faster because you usually use it with multiple verbs at the same time. For example, with data table you can do a mutate and a select in a single step, and it's smart enough to know that there's no point in computing the new variable for the rows you're about to throw away.
+<!-- For multiple operations, data.table can be faster because you usually use it with multiple verbs at the same time. For example, with data table you can do a mutate and a select in a single step, and it's smart enough to know that there's no point in computing the new variable for the rows you're about to throw away. -->
+`data.table` может оказаться быстрее во многих случаях, потому что возможно выполнение нескольких операций одновременно. Например, вы можете выполнить `mutate` и `select` за один вызов, и `data.table` сообразит что нет нужды рассчитывать новую переменную в строках которые должны быть отфильтрованы.
 
-The advantages of using dplyr with data tables are:
+<!-- The advantages of using dplyr with data tables are: -->
+Преимущества при использовании `data.tables` следующие:
 
-* For common data manipulation tasks, it insulates you from reference
+<!-- * For common data manipulation tasks, it insulates you from reference
   semantics of data.tables, and protects you from accidentally modifying
-  your data.
+  your data. -->
+* В большинстве случаев `data.tables` изолирует вас от данных непосредственно, и защищает их таким образом от непреднамеренного изменения.
+<!-- * Instead of one complex method built on the subscripting operator (`[`),
+  it provides many simple methods. -->
+* Вместо изощрённого использования встроенного оператора `[`, предлагается множество относительно простых методов.
 
-* Instead of one complex method built on the subscripting operator (`[`),
-  it provides many simple methods.
+<!-- ## Databases -->
+## Базы данных
 
-## Databases
+<!-- dplyr also allows you to use the same verbs with a remote database. It takes care of generating the SQL for you so that you can avoid the cognitive challenge of constantly swiching between languages. See the databases vignette for more details. -->
+`dplyr` позволяет использовать удалённые базы данных так же как `data.frame`. Избавляя таким образом от необходимости постоянно переключать мышление между языками. Для уточнения деталей необходимо обратиться к соответствующему руководству[*](http://cran.rstudio.com/web/packages/dplyr/vignettes/databases.html).
 
-dplyr also allows you to use the same verbs with a remote database. It takes care of generating the SQL for you so that you can avoid the cognitive challenge of constantly swiching between languages. See the databases vignette for more details.
 
-Compared to DBI and the database connection algorithms:
+<!-- Compared to DBI and the database connection algorithms: -->
+По сравнению с другим вариантами использования баз данных:
+<!-- * it hides, as much as possible, the fact that you're working with a remote database -->
+* скрывается, на сколько это возможно, факт использования удалённой базы данных
+<!-- * you don't need to know any sql (although it helps!) -->
+* исчезает необходимость изучать какой-либо диалект sql (хотя это может быть полезно!)
+<!-- * it shims over the many differences between the different DBI implementations -->
+* предоставляется прослойка между множеством различных реализаций интерфейсов баз данных.
 
-* it hides, as much as possible, the fact that you're working with a remote database
-* you don't need to know any sql (although it helps!)
-* it shims over the many differences between the different DBI implementations
+<!-- ## Multidimensional arrays / cubes -->
+## Многомерные массивы/кубы
 
-## Multidimensional arrays / cubes
+<!-- `tbl_cube()` provides an experimental interface to multidimensional arrays or data cubes. If you're using this form of data in R, please get in touch so I can better understand your needs. -->
+`tbl_cube()` предлагает экспериментальный интерфейс к многомерным массивам или кубам (как OLAP-кубы) . Если вы используете подобное представление в R, пожалуйста, свяжитесь с автором чтобы он лучше понял ваши потребности.
 
-`tbl_cube()` provides an experimental interface to multidimensional arrays or data cubes. If you're using this form of data in R, please get in touch so I can better understand your needs.
+<!-- # Comparisons -->
+# Сравнение с другими подходами
 
-# Comparisons
+<!-- Compared to all existing options, dplyr: -->
+В сравнение со всеми существующими альтернативами, `dplyr`:
 
-Compared to all existing options, dplyr:
+<!-- * abstracts away how your data is stored, so that you can work with data frames, data tables and remote databases using the same functions. This lets you think about what you want to achieve, not the logistics of data storage. -->
+* абстрагирует от способа хранения данных, так что возможно использование одного и того же набора функций для манипулирования `data.frame`, `data.tables` и удалёнными базами данных. Это позволяет думать только о том что вы хотите сделать с данными, а не об устройстве хранилища данных
+<!-- * it provides a thoughtful default `print()` method so you don't accidentally print pages of data to the screen (this was inspired by data table's output) -->
+* предлагает продуманный метод `print()`, которые не распечатает случайно несколько страниц данных на экран (вдохновение было почерпнуто в `data.tables`).
 
-* abstracts away how your data is stored, so that you can work with data frames, data tables and remote databases using the same functions. This lets you think about what you want to achieve, not the logistics of data storage.
+<!-- Compared to base functions: -->
+В сравнении с функциями из основной поставки:
 
-* it provides a thoughtful default `print()` method so you don't accidentally print pages of data to the screen (this was inspired by data table's output)
+<!-- * dplyr is much more consistent; functions have the same interface so that once you've mastered one, you can easily pick the others -->
+* `dplyr` намного более строен; функции имеют идентичный интерфейс, так что освоив одну вы разбираетесь и в других
+<!-- * base functions tend to be based around vectors; dplyr is centered around data frames -->
+* функции из базовой поставки стремятся обрабатывать векторы; `dplyr` концентрируется на наборах данных
 
-Compared to base functions:
+<!-- Compared to plyr: -->
+В сравнении с `plyr`:
 
-* dplyr is much more consistent; functions have the same interface so that once you've mastered one, you can easily pick the others
+<!-- * dplyr is much much faster -->
+*    `dplyr` намного намного быстрее
+<!-- как это правильно перевести? -->
+<!-- * it provides a better thought out set of joins -->
+*    предлагает более продуманный набор объединений(**?**)
+<!-- * it only provides tools for working with data frames (e.g. most of dplyr is equivalent to `ddply()` + various functions, `do()` is equivalent to `dlply()`) -->
+*    предлагает инструменты только для работы с `data.frame` (т.о. большая часть `dplyr` эквивалентна `ddply()` с добавлением некоторых функций, `do()` эквивалентна `dlply()`)
 
-* base functions tend to be based around vectors; dplyr is centered around data frames
+<!-- Compared to virtual data frame approaches: -->
+В сравнении с использованием виртуальных `data.frame`:
 
-Compared to plyr:
-
-* dplyr is much much faster
-
-* it provides a better thought out set of joins
-
-* it only provides tools for working with data frames (e.g. most of dplyr is equivalent to `ddply()` + various functions, `do()` is equivalent to `dlply()`)
-
-Compared to virtual data frame approaches:
-
-* it doesn't pretend that you have a data frame: if you want to run lm etc, you'll still need to manually pull down the data
-
-* it doesn't provide methods for R summary functions (e.g. `mean()`, or `sum()`)
+<!-- * it doesn't pretend that you have a data frame: if you want to run lm etc, you'll still need to manually pull down the data -->
+* виртуальный `data.frame` не предполагает что у вас есть данные, так что если необходимо выполнить `lm()` понадобится получить данные вручную
+<!-- * it doesn't provide methods for R summary functions (e.g. `mean()`, or `sum()`) -->
+* виртуальный `data.frame` не предоставляет методов для агрегатных функций (т.е. `mean()` или `sum()`)
