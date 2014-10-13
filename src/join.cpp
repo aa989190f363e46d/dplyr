@@ -223,6 +223,15 @@ namespace dplyr{
     
     JoinVisitor* join_visitor( SEXP left, SEXP right, const std::string& name_left, const std::string& name_right){
         switch( TYPEOF(left) ){
+            case CPLXSXP:
+                {
+                    switch( TYPEOF(right) ){
+                    case CPLXSXP: return new JoinVisitorImpl<CPLXSXP, CPLXSXP>( left, right ) ;
+                    default:
+                        break ;
+                    }
+                    break ;
+                }
             case INTSXP:
                 {
                     bool lhs_factor = Rf_inherits( left, "factor" ) ;
@@ -231,7 +240,11 @@ namespace dplyr{
                             {
                                 bool rhs_factor = Rf_inherits( right, "factor" ) ;
                                 if( lhs_factor && rhs_factor){
-                                    return new JoinFactorFactorVisitor(left, right) ;
+                                    if( same_levels(left, right) ){
+                                        return new JoinFactorFactorVisitor_SameLevels(left, right) ;
+                                    } else {
+                                        return new JoinFactorFactorVisitor(left, right) ;
+                                    }
                                 } else if( !lhs_factor && !rhs_factor) {
                                     return new JoinVisitorImpl<INTSXP, INTSXP>( left, right ) ;
                                 }

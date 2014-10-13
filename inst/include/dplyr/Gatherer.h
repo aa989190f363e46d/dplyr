@@ -179,6 +179,9 @@ namespace dplyr {
 
     template <typename Data, typename Subsets>
     inline Gatherer* constant_gatherer(SEXP x, int n){
+        if( Rf_inherits(x, "POSIXlt" ) ){
+            stop("`mutate` does not support `POSIXlt` results");    
+        }
         switch( TYPEOF(x) ){
             case INTSXP: {
                     if( Rf_inherits(x, "Date" )) return new ConstantTypedGatherer<INTSXP,Data,Subsets>(x,n, get_date_classes() ) ;
@@ -192,6 +195,7 @@ namespace dplyr {
             }
             case LGLSXP: return new ConstantGathererImpl<LGLSXP,Data,Subsets>( x, n ) ;
             case STRSXP: return new ConstantGathererImpl<STRSXP,Data,Subsets>( x, n ) ;
+            case CPLXSXP: return new ConstantGathererImpl<CPLXSXP,Data,Subsets>( x, n ) ;
             case VECSXP: return new ConstantGathererImpl<STRSXP,Data,Subsets>( x, n ) ;
             default: break ;
         }
@@ -203,6 +207,9 @@ namespace dplyr {
         typename Data::group_iterator git = gdf.group_begin() ;
         SlicingIndex indices = *git ;
         Shield<SEXP> first( proxy.get(indices) ) ;
+        if( Rf_inherits(first, "POSIXlt" ) ){
+            stop("`mutate` does not support `POSIXlt` results");    
+        }
         switch( TYPEOF(first) ){
             case INTSXP:  
                 {
@@ -219,6 +226,7 @@ namespace dplyr {
             case LGLSXP:  return new GathererImpl<LGLSXP,Data,Subsets> ( first, indices, proxy, gdf ) ;
             case STRSXP:  return new GathererImpl<STRSXP,Data,Subsets> ( first, indices, proxy, gdf ) ;
             case VECSXP:  return new GathererImpl<VECSXP,Data,Subsets> ( first, indices, proxy, gdf ) ;
+            case CPLXSXP: return new GathererImpl<CPLXSXP,Data,Subsets> ( first, indices, proxy, gdf ) ;
             default: break ;
         }
         

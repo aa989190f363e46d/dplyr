@@ -1,3 +1,33 @@
+# dplyr 0.3.0.9000
+
+* Hybrid version of `lead` and `lag` are enabled, only for the simple 2 args case
+  for now, i.e. `lag(x, 2)`. All other forms still fall back to R version. 
+
+* `right_join()` and `outer_join()` ... (#96).  
+
+* `mutate` now handles complex vectors (#436)
+
+* More flexible handling of the `order_by` argument in hybrid versions of `first`, 
+  `nth` and `last`. When `order_by` is a symbol, the hybrid version is used, 
+  otherwise standard R evaluation is used. This might get further optimized for 
+  more cases later (#626)
+
+* Better naming of columns in joins (#655).   
+
+* hybrid `lag` and `lead` only handles simple call forms, the first 
+  argument must have either no name or be called `x`. 
+  Then the second argument must be either missing, with no name or be called `n`. 
+  All other forms of the call are handled by R evaluation. (#683).
+
+* Fixed segfault in `JoinStringFactorVisitor` class (#688).
+
+* `grouped_df` requires `vars` to be a list of symbols (#665).
+
+* Added class `JoinFactorFactorVisitor_SameLevels` for the special case when 
+  two factors with the same levels (in the same order) are joined (#675). 
+  
+* `mutate` forbids `POSIXlt` results (#670)  
+  
 # dplyr 0.3.0.1
 
 * Fixed problem with test script on Windows.
