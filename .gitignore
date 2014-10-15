@@ -1,7 +1,4 @@
-*.o
-*.so
-.Rproj.user
-.Rhistory
-inst/doc
-vignettes/*.md
-.httr-oauth
+*
+!.gitignore
+!/vignettes/*
+!*.html
