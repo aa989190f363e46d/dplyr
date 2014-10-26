@@ -3,17 +3,24 @@
 %\VignetteIndexEntry{Adding new database support to dplyr}
 -->
 
-# Adding a new sql backend
+<!-- # Adding a new sql backend -->
+<!-- понятно что автор написал "нового", но в русском это будет ближе по значению к инстанцированию, чем созданию собственной кодовой базы -->
+# Создание собственного sql-бэкэнда
 
-This document describes how to describe a new SQL backend to dplyr. It's a work in progress, but will hopefully get started. If you're familiar with how your database works, and at least one other database that dplyr already supports, this should be reasonably simple, and I'm happy to help if you get stuck.  It's also possible that a new database backend may need new methods - I'm also happy to add those as needed. If you need more help, please email the [mailing list](mailto:manipulatr@googlegroups.com) and I'll help you get unstuck.
+<!-- This document describes how to describe a new SQL backend to dplyr. It's a work in progress, but will hopefully get started. If you're familiar with how your database works, and at least one other database that dplyr already supports, this should be reasonably simple, and I'm happy to help if you get stuck.  It's also possible that a new database backend may need new methods - I'm also happy to add those as needed. If you need more help, please email the [mailing list](mailto:manipulatr@googlegroups.com) and I'll help you get unstuck. -->
+Этот документ описывает как описать новый SQL-бэкэнд для dplyr. Документ находится на стадии разработки, но хотя бы начат. Если вы знакомы с тем как работает база данных с которой вы работаете, и, как минимум, с одной из тех которые dplyr уже поддерживает, создать свой будет относительно просто, и я буду рад помочь вам если вы растерялись. возможно, также, что для бэкэнда к нужной вам базе данных нужен новый метод -- опять, таки, буду рад помочь. За более существенной помощью обращайтесь в [список рассылки](mailto:manipulatr@googlegroups.com).
 
-dplyr uses S3, so make sure that you're [familiar with the basics](http://adv-r.had.co.nz/OO-essentials.html#s3) before you start.
+<!-- dplyr uses S3, so make sure that you're [familiar with the basics](http://adv-r.had.co.nz/OO-essentials.html#s3) before you start. -->
+dplyr использует S3, так что нужно убедиться что вы знакомы с [основами этой системы объектов](http://adv-r.had.co.nz/OO-essentials.html#s3) перед тем как ничинать разработку.
 
-See `?backend_sql` and `?backend_db` for a complete list of generics.
+<!-- See `?backend_sql` and `?backend_db` for a complete list of generics. -->
+Взгляните на `?backend_sql` и `?backend_db` чтобы получить полный список дженериков (термин из S3 соответствующий абстрактным методам).
 
-## Create the src object
+<!-- ## Create the src object -->
+## Создание src-объекта
 
-Start by creating a new src function to represent the backend. Assuming we're going to create a src for mssql, you'd call it `src_mssql()`, and you'd follow the pattern of an existing src. A simplified version of `src_postgres()` is show below:
+<!-- Start by creating a new src function to represent the backend. Assuming we're going to create a src for mssql, you'd call it `src_mssql()`, and you'd follow the pattern of an existing src. A simplified version of `src_postgres()` is show below: -->
+Начнём с создания своей функции src для получения описания нового бэкэнда. Предположим что мы создаём её для новый бэкэнда к mssql (Microsoft SQL Server), назовём её `src_mssql()`, и используем как шаблон код существующей функции. Упрощённо в случае с `src_postgres()` это будет выглядеть следующим образом:
 
 ```{r, eval = FALSE}
 src_postgres <- function(dbname = NULL, host = NULL, port = NULL, user = NULL,
@@ -26,9 +33,11 @@ src_postgres <- function(dbname = NULL, host = NULL, port = NULL, user = NULL,
 }
 ```
 
-Use `src_sql()` to create a new S3 object with the correct structure. It must have a DBI connection, but it can store anything else that might be useful.
+<!-- Use `src_sql()` to create a new S3 object with the correct structure. It must have a DBI connection, but it can store anything else that might be useful. -->
+Используйте `src_sql()` для создания нового S3-объекта с правильной структурой . Он должен иметь атрибут для хранения DBI-соединения, но можно добавить ещё что-нибудь полезное.
 
-Next, implement a method for `src_desc()` that briefly describes the source:
+<!-- Next, implement a method for `src_desc()` that briefly describes the source: -->
+Далее реализуем метод для `src_desc()` используемый для получения краткого описания источника данных:
 
 ```{r}
 #' @export
@@ -41,24 +50,32 @@ src_desc.src_postgres <- function(x) {
 }
 ```
 
-If you read the source code for the real `src_postgres()` you'll notice that it caches the `getGetInfo()` field on creation, since this saves a little time when printing tbls.
+<!-- If you read the source code for the real `src_postgres()` you'll notice that it caches the `getGetInfo()` field on creation, since this saves a little time when printing tbls. -->
+Если вы посмотрите на код настоящей `src_postgres()`, то заметите что она кэширует поле `getGetInfo()` при создании, что позволяет сэкономить немного времени при выводе описаний таблиц.
 
-Before continuing, check that you can create a connection to a local database. Don't worry if the object doesn't print correctly, you'll need to add a few other methods first.
+<!-- Before continuing, check that you can create a connection to a local database. Don't worry if the object doesn't print correctly, you'll need to add a few other methods first. -->
+Чтобы продолжать убедитесь что у вас создается соединение до локальной базы данных, ничего страшного если при этом описание объектов выводятся неправильно, вам нужно добавить ещё несколько методов сперва.
 
-## Table listing
+<!-- ## Table listing -->
+## Список таблиц
 
-Next implement two methods that allow dplyr to query the tables present in a database:
+<!-- Next implement two methods that allow dplyr to query the tables present in a database: -->
+Далее реализуем два метода для того чтобы dplyr мог узнать какие таблицы есть в базе данных:
 
 * `db_list_tables()`
 * `db_has_table()`
 
-These should be very straightforward if there's an existing DBI interface, and only a little harder if not. This methods basically provide a shim around individual database packages to make them behave the same. See the documentation for more details.
+<!-- These should be very straightforward if there's an existing DBI interface, and only a little harder if not. This methods basically provide a shim around individual database packages to make them behave the same. See the documentation for more details. -->
+Очевидно как это сделать если подобные возможности реализованы в DBI-интерфейсе и несколько сложнее если нет. Эти два метода в основном нужны для нивелирования разницы в поведении между конкретными интерфейсами к базам данных. Смотрите документацию для уточнения деталей.
 
-Once you have implemented these methods you should be able to connect to a local database get a useful description, including a list of tables. Don't continue on until you have that working.
+<!-- Once you have implemented these methods you should be able to connect to a local database get a useful description, including a list of tables. Don't continue on until you have that working. -->
+После того как вы реализуете эти методы, у вас должна появиться возможность соединяться с базой данных, получать приемлемое описание, включая список таблиц. Не следует продолжать разработку до тех пор пока все это не заработает.
 
+<!-- ## tbl -->
 ## tbl
 
-Next implement the `tbl()` method for your data source. This will probably just be
+<!-- Next implement the `tbl()` method for your data source. This will probably just be -->
+Далее реализуется метод `tbl()` для вашего источника данных. Вероятно это будет просто что-то вроде такого:
 
 ```{r, eval = FALSE}
 tbl.src_mssql <- function(src, from, ...) {
@@ -66,56 +83,75 @@ tbl.src_mssql <- function(src, from, ...) {
 }
 ```
 
-Before continuing, make sure you can connect to an existing table, and that the results are printed reasonably. If not, that may indicate your database uses a non-standard DBI interface. That means you'll probably you'll probably also need to subclass the [R6](http://cran.r-project.org/web/packages/R6/vignettes/Introduction.html) Query class, and the `S3` query method that creates a new query object. If that happens to you, I'd strongly recommend asking for help.
+<!-- Before continuing, make sure you can connect to an existing table, and that the results are printed reasonably. If not, that may indicate your database uses a non-standard DBI interface. That means you'll probably you'll probably also need to subclass the [R6](http://cran.r-project.org/web/packages/R6/vignettes/Introduction.html) Query class, and the `S3` query method that creates a new query object. If that happens to you, I'd strongly recommend asking for help. -->
+Перед тем как продолжить убедитесь что вы можете соединиться с существующей таблицей и её описание выводится внятно. Если это не так, то возможно ваша база использует нестандартный DBI-интерфейс. Вероятно так же что это означает необходимость наследоваться от класса Query из пакета [R6](http://cran.r-project.org/web/packages/R6/vignettes/Introduction.html) и создание собственного S3-метода query который создаёт объект-запрос. Если это так, я настоятельно рекомендую вам обратиться за помощью.
 
-This is also a good time implement `explain()`, by adding a method for `db_explain()`.
+<!-- This is also a good time implement `explain()`, by adding a method for `db_explain()`. -->
+Будет хорошо если вы также реализуете функцию `explain()` добавлением метода для `db_explain()`.
 
-If your database uses non-standard quoting (i.e. something other than `"` for identifiers and `'` for strings), implement methods for `sql_escape_string()` and `sql_escape_ident()`.
+<!-- If your database uses non-standard quoting (i.e. something other than `"` for identifiers and `'` for strings), implement methods for `sql_escape_string()` and `sql_escape_ident()`. -->
+Если используемая вами база данных использует нестандартные символы для экранирования литералов (т.е. отличающиеся от `"` для идентификаторов и `'` для строк), реализуйте методы для `sql_escape_string()` и для `sql_escape_ident()`.
 
-At this point, all the basic verbs (`summarise()`, `filter()`, `arrange()`, `mutate()` etc) should also work, but it's hard to test without some data.
+<!-- At this point, all the basic verbs (`summarise()`, `filter()`, `arrange()`, `mutate()` etc) should also work, but it's hard to test without some data. -->
+С этого момента все основные команды манипулирования (`summarise()`, `filter()`, `arrange()`, `mutate()` и т.п.) должны работать, однако в этом трудно убедиться на пустой базе данных.
 
+<!-- ## `copy_to()` -->
 ## `copy_to()`
 
-Next, implement the methods that power `copy_to()` work. Once you've implemented these methods, you'll be able copy datasets from R into your database, which will make testing much easier.
+<!-- Next, implement the methods that power `copy_to()` work. Once you've implemented these methods, you'll be able copy datasets from R into your database, which will make testing much easier. -->
+Далее реализуйте для поддержки `copy_to()`. После того как вы это сделаете станет возможным копирование наборов данных из R в вашу базу данных, что сделает дальнейшее тестирование намного проще.
 
 * `db_data_type()`
 * `sql_begin()`, `sql_commit()`, `sql_rollback()`
 * `sql_create_table()`, `sql_insert_into()`, `sql_drop_table()`
 * `sql_create_index()`, `sql_analyze()`
 
-If the database doesn't support a function, just return `TRUE` without doing anything. If you find these methods a very poor match to your backend, you may find it easier to provide a direct `copy_to()` method.
+<!-- If the database doesn't support a function, just return `TRUE` without doing anything. If you find these methods a very poor match to your backend, you may find it easier to provide a direct `copy_to()` method. -->
+Если ваша база данных не поддерживает какую-либо функцию метод должен просто возвращать `TRUE`. Если вам кажется что такой способ несообразен вашему бэкэнду можно просто реализовать собственный метод `copy_to()` напрямую.
 
-At this point, you should be able to copy the nycflights13 data packages into your database with (e.g.):
+<!-- At this point, you should be able to copy the nycflights13 data packages into your database with (e.g.): -->
+С этого момента у вас есть возможность скопировать данные из nycflights13 в вашу базу данных:
 
 ```{r, eval = FALSE}
 copy_nycflights13(src_mssql(...))
 copy_lahman(src_mssql(...))
 ```
 
-Don't proceed further until this works, and you've verified that the basic single table verbs word.
+<!-- Don't proceed further until this works, and you've verified that the basic single table verbs word. -->
+Не продолжайте далее до тех пор пока код выше не заработает и вы не убедитесь что основные операции манипулирования одной таблицей работают правильно.
 
-## Query metadata
+<!-- ## Query metadata -->
+## Запрос метаданных
 
-If you database provides a nice way to access query metadata, implement `db_query_fields()` and `db_query_rows()` which return field names and row count for a given query.
+<!-- If you database provides a nice way to access query metadata, implement `db_query_fields()` and `db_query_rows()` which return field names and row count for a given query. -->
+Если база данных используемая вами предлагает хороший способ получать метаданные запроса, реализуйте собственные методы `db_query_fields()` и `db_query_rows()` возвращающие имена колонок или количество строк для переданного запроса.
 
-## Compute, collect and collapse
+<!-- ## Compute, collect and collapse -->
+## Compute, collect и collapse
 
-Next, check that `collapse()`, `compute()`, and `collect()` work.
+<!-- Next, check that `collapse()`, `compute()`, and `collect()` work. -->
+Далее необходимо чтобы `collapse()`, `compute()`, и `collect()` работали.
 
-* If `collapse()` fails, your database has a non-standard way of constructing 
-  subqueries. Add a method for `sql_subquery()`.
-  
-* If `compute()` fails, your database has a non-standard way of saving queries
-  in temporary tables. Add a method for `db_save_query()`.
+<!-- * If `collapse()` fails, your database has a non-standard way of constructing 
+  subqueries. Add a method for `sql_subquery()`. -->
+* Если `collapse()` не работает, значит ваша база данных использует нестандартный способ конструирования подзапросов. Добавьте метод для `sql_subquery()`.
 
-## Multi table verbs
+<!-- * If `compute()` fails, your database has a non-standard way of saving queries
+  in temporary tables. Add a method for `db_save_query()`. -->
+* Если `compute()` не работает, ваша база данных использует нестандартный способ для сохранения запросов во временные таблицы. Добавьте метод для `db_save_query()`.
 
-Next check the multitable verbs:
+<!-- ## Multi table verbs -->
+## Многотабличные операции
 
-* `left_join()`, `inner_join()`: powered by `sql_join()`
-* `semi_join()`, `anti_join()`: powered by `sql_semi_join()`
-* `union()`, `intersect()`, `setdiff()`: powered by `sql_set_op()`
+<!-- Next check the multitable verbs: -->
+Далее убедитесь что реализованы операции задействующие несколько таблиц одновременно:
 
-## sql translation
+* `left_join()`, `inner_join()`: реализованные при помощи `sql_join()`
+* `semi_join()`, `anti_join()`: реализованные при помощи `sql_semi_join()`
+* `union()`, `intersect()`, `setdiff()`: реализованные при помощи `sql_set_op()`
 
-To finish off, you can add custom R -> SQL translation by providing a method for `src_translate_env()`. This function should return an object created by `sql_variant()`. See existing methods for examples.
+<!-- ## sql translation -->
+## Трансляция в sql
+
+<!-- To finish off, you can add custom R -> SQL translation by providing a method for `src_translate_env()`. This function should return an object created by `sql_variant()`. See existing methods for examples. -->
+Для завершения вы можете добавить собственный метод для трансляции из R в SQL  `src_translate_env()`. Эта функция должна возвращать объект созданный функцией `sql_variant()`. Посмотрите на код существующих реализаций этого метода.

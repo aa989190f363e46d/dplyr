@@ -13,31 +13,61 @@ knitr::opts_chunk$set(collapse = T, comment = "#>")
 library(dplyr)
 ```
 
+<!-- 
 Dplyr uses non-standard evaluation (NSE) in all of the most important single table verbs: `filter()`, `mutate()`, `summarise()`, `arrange()`, `select()` and `group_by()`. NSE is important not only to save you typing, but for database backends, is what makes it possible to translate your R code to SQL. However, while NSE is great for interactive use it's hard to program with. This vignette describes how you can opt out of NSE in dplyr, and instead rely only on SE (along with a little quoting).
+ -->
 
+Dplyr использует нестандартный порядок вычисления (в дальнейшем NSE) во всех наиболее важных командах манипулирующих одной таблицей: `filter()`, `mutate()`, `summarise()`, `arrange()`, `select()` и `group_by()`. NSE важен не только для сокращения количества набираемых символов, но и при работе с базами данных, это то что делает возможным трансляцию между вашим R кодом и SQL. Однако, хоть NSE отлично подходит для интерактивного использования его трудно программировать. Это руководство описывает как вы можете избежать NSE в dplyr, и вместо этого использовать обычный порядок (с некоторыми оговорками).
+
+<!-- 
 Behind the scenes, NSE is powered by the [lazyeval](https://github.com/hadley/lazyeval) package. The goal is to provide an approach to NSE that you can learn once and then apply in many places (dplyr is the first of my packages to use this approach, but over time I will adopt it everywhere). You may want to read the lazyeval vignettes, if you like to learn more about the underlying details, or if you'd like to use this approach in your own packages.
+ -->
 
+За кулисами dplyr используется NSE в том виде в каком он предоставляется пакетом [lazyeval](https://github.com/hadley/lazyeval). Задача этого пакета дать подход к NSE который вы можете многократно повторно использовать (dplyr -- это первый мой пакет использующий такой подход, но я надеюсь со временем распространить его повсеместно). Возможно у вас возникнет желание прочитать руководства по lazyeval[*](http://cran.r-project.org/web/packages/lazyeval/vignettes/), если будет необходимо узнать больше деталей или если вы хотите использовать его в собственных пакетах.
+
+<!-- 
 ## Standard evaluation basics
+ -->
 
+## Основы вычислений со стандартным порядком
+
+<!-- 
 Every function in dplyr that uses NSE also has a version that uses SE. There's a consistent naming scheme: the SE is the NSE name with `_` on the end. For example, the SE version of `summarise()` is `summarise_()`, the SE version of `arrange()` is `arrange_()`. These functions work very similarly to their NSE cousins, but the inputs must be "quoted":
+ -->
+
+Каждая функция в dplyr использующая NSE также имеет версию со стандартным порядком (далее SE). Для именования пар таких функций используется следующее правило: SE-аналог именуется как NSE-функция с суффиксом `_` в конце. Например, SE версия функции `summarise()` -- это `summarise_()`, SE версия `arrange()` -- `arrange_()`. Эти функции очень похожи на своих NSE-сестёр, но требуют экранировать входные параметры:
 
 ```{r}
-# NSE version:
+# NSE-версия:
 summarise(mtcars, mean(mpg))
 
-# SE versions:
+# SE-версия:
 summarise_(mtcars, ~mean(mpg))
 summarise_(mtcars, quote(mean(mpg)))
 summarise_(mtcars, "mean(mpg)")
 ```
 
+<!-- 
 There are three ways to quote inputs that dplyr understands:
+ -->
 
+Ниже перечислены три варианта экранирования входных параметров которые понимает dplyr:
+
+<!-- 
 * With a formula, `~ mean(mpg)`.
 * With `quote()`, `quote(mean(mpg))`.
 * As a string: `"mean(mpg)"`.
+ -->
 
+* через выражение-формулу, `~ mean(mpg)`.
+* через функцию `quote()`, `quote(mean(mpg))`.
+* через литерал: `"mean(mpg)"`.
+
+<!-- 
 It's best to use a formula, because a formula captures both the expression to evaluate, and the environment in which it should be a evaluated. This is important if the expression is a mixture of variables in the data frame and objects in the local environment:
+ -->
+
+Лучше всего использовать вариант с формулой, т.к. он позволяет передать не только выражение, но и окружение в котором это выражение будет вычислено. Такое поведение полезно если выражение содержит смесь из колонок таблицы данных и локальных переменных:
 
 ```{r}
 constant1 <- function(n) ~n
@@ -45,15 +75,23 @@ summarise_(mtcars, constant1(4))
 ```
 
 ```{r, error = TRUE, purl = FALSE}
-# Using anything other than a formula will fail because it doesn't
-# know which environment to look in
+# Использование любого метода кроме выражения-формулы терпит неудачу
+# потому что не может определить в каком окружении искать имя переменной
 constant2 <- function(n) quote(n)
 summarise_(mtcars, constant2(4))
 ```
 
+<!-- 
 ## Setting variable names
+ -->
 
+## Назначение имён переменным
+
+<!-- 
 If you also want to output variables to vary, you need to pass a list of quoted objects to the `.dots` argument:
+ -->
+
+Если вы также хотите варьировать списком выходных переменных, необходимо передавать список экранированных выражений в параметр `.dots`:
 
 ```{r}
 n <- 10
@@ -63,24 +101,36 @@ summarise_(mtcars, .dots = dots)
 summarise_(mtcars, .dots = setNames(dots, c("mean", "count")))
 ```
 
+<!-- 
 ## Mixing constants and variables
+ -->
 
+## Смешивание констант и переменных
+
+<!-- 
 What if you need to mingle constants and variables? Use the handy `lazyeval::interp()`:
+ -->
+
+Что если вам нужно передать константы и переменные вперемешку? Используйте `lazyeval::interp()`:
 
 ```{r}
 library(lazyeval)
-# Interp works with formulas, quoted calls and strings (but formulas are best)
+# Interp работате с формулами, экранированными вызовами и литералами (но лучше формулы)
 interp(~ x + y, x = 10)
 interp(quote(x + y), x = 10)
 interp("x + y", x = 10)
 
-# Use as.name if you have a character string that gives a variable name
+# Используйте as.name если у вас есть имя переменной в виде строки символов
 interp(~ mean(var), var = as.name("mpg"))
-# or supply the quoted name directly
+# или передайте экранированное имя непосредственно
 interp(~ mean(var), var = quote(mpg))
 ```
 
+<!-- 
 Because [every action in R is a function call](http://adv-r.had.co.nz/Functions.html#all-calls) you can use this same idea to modify functions:
+ -->
+
+Из-за того что [все действия в R -- это вызовы функций](http://adv-r.had.co.nz/Functions.html#all-calls) вы можете использовать этот принцип для модификации функций:
 
 ```{r}
 interp(~ f(a, b), f = quote(mean))
@@ -88,14 +138,18 @@ interp(~ f(a, b), f = as.name("+"))
 interp(~ f(a, b), f = quote(`if`))
 ```
 
+<!-- 
 If you already have a list of values, use `.values`:
+ -->
+
+Если у вас уже есть список значений, используйте `.values`
 
 ```{r}
 interp(~ x + y, .values = list(x = 10))
 
-# You can also interpolate variables defined in the current
-# environment, but this is a little risky becuase it's easy
-# for this to change without you realising
+# Вы также можете передать имена через текущее окружение,
+# но это немного рискованно, потому что таким образом легко
+# внести непроизвольные изменения
 y <- 10
 interp(~ x + y, .values = environment())
 ```
