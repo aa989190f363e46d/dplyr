@@ -183,8 +183,12 @@ There are a number of helper functions you can use within `select()`, like `star
 select(flights, tail_num = tailnum)
 ```
 
+<<<<<<< HEAD
 <!-- But because `select()` drops all the variables not explicitly mentioned, it's not that use. Instead, use `rename()`: -->
 Но поскольку она отбрасывает все явно не указанные аргументы, используйте вместо неё для этого `rename()`:
+=======
+But because `select()` drops all the variables not explicitly mentioned, it's not that useful. Instead, use `rename()`:
+>>>>>>> e864107c488bbf58b2e856f2630e5907f5e1dbed
 
 ```{r}
 rename(flights, tail_num = tailnum)
